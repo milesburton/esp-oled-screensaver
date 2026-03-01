@@ -82,6 +82,18 @@ If you cannot access AP mode (e.g., device flashed with broken firmware), use a 
 
 We provide an automated recovery script that handles everything:
 
+**If using VS Code Dev Container:**
+
+```bash
+# From inside the container terminal:
+./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
+
+# Or explicitly specify port if using different mapping:
+./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
+```
+
+**If using system Python (not in container):**
+
 ```bash
 # Clone repository
 git clone https://github.com/milesburton/esp8266-oled-experiment.git
@@ -92,7 +104,7 @@ cd esp8266-oled-experiment
 
 # Examples:
 ./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
-./recovery.sh COM3 esp8266_generic
+./recovery.sh COM3 esp8266_generic  # Windows
 ```
 
 The script will:
@@ -106,6 +118,65 @@ The script will:
 7. Provide next steps
 
 **If script has issues**, follow the manual steps below.
+
+#### Dev Container USB Serial Port Access
+
+If you're using VS Code Remote Containers, you need to expose the USB device to the container.
+
+**Option A: Automatic (Easiest - VS Code only)**
+
+Update `.devcontainer/devcontainer.json`:
+
+```json
+{
+  "runArgs": [
+    "--privileged",
+    "-v", "/dev:/dev"
+  ]
+}
+```
+
+Then rebuild container: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
+
+**Option B: Manual Device Mapping (Docker/Linux)**
+
+If using Docker directly:
+
+```bash
+# Find your USB device
+ls -la /dev/ttyUSB*  # or /dev/ttyACM*
+
+# Run container with device access
+docker run -it --privileged \
+  -v /dev/ttyUSB0:/dev/ttyUSB0 \
+  your-container-name /bin/bash
+```
+
+**Option C: User Group Access (Linux only, no privileged needed)**
+
+```bash
+# On host, add your user to dialout group
+sudo usermod -a -G dialout $USER
+
+# Then in devcontainer.json (simpler):
+{
+  "runArgs": [
+    "-v", "/dev/ttyUSB0:/dev/ttyUSB0",
+    "--device-cgroup-rule=c 188:* rmw"
+  ]
+}
+```
+
+**Finding your serial port in container:**
+
+```bash
+# Inside container
+ls -la /dev/tty*
+# Should see: /dev/ttyUSB0, /dev/ttyACM0, etc.
+
+# Verify esptool can find it
+esptool.py version  # Will list available ports
+```
 
 #### Manual Flash Instructions
 

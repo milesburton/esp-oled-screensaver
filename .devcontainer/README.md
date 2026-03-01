@@ -34,6 +34,32 @@ Mounted from host:
 
 If `gh` commands fail, authenticate once on the host: `gh auth login`
 
+## Serial Programmer Access (USB devices)
+
+The container is configured to access USB serial devices (e.g., CH340, CP2102 programmers) for flashing ESP8266 boards.
+
+**Automatic Setup:**
+
+- Device container mounts `/dev` directory with `--privileged`
+- USB devices appear at `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.
+- No additional configuration needed
+
+**Recovery and Flashing:**
+
+```bash
+# Inside container, use the recovery script
+./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
+
+# Or manually with esptool
+esptool.py -p /dev/ttyUSB0 version
+```
+
+**If USB devices don't appear:**
+
+1. Restart Docker Desktop
+2. Unplug and reconnect USB device
+3. Rebuild container: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
+
 ## Usage
 
 ```bash

@@ -4,6 +4,14 @@
   "context": "..",
   "remoteUser": "vscode",
 
+  // USB device access for serial programmers (esptool, recovery.sh)
+  // Required for flashing ESP8266 devices
+  // See RECOVERY.md for more information
+  "runArgs": [
+    "--privileged",
+    "-v", "/dev:/dev"
+  ],
+
   "features": {},
 
   "customizations": {

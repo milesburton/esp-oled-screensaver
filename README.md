@@ -83,7 +83,12 @@ I2C Address: 0x3C (configurable at compile time)
 code .
 # Click "Reopen in Container"
 ./build.sh esp8266_d1_mini
+
+# Also supports serial programmer flashing (e.g., recovery.sh)
+./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
 ```
+
+The container automatically provides USB device access for flashing with serial programmers.
 
 See [.devcontainer/README.md](.devcontainer/README.md) for full details.
 

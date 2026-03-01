@@ -1,6 +1,18 @@
 #!/bin/bash
 # Recovery and reflash script for ESP8266-OLED-Experiment
 # Usage: ./recovery.sh [port] [board]
+#
+# Examples:
+#   ./recovery.sh /dev/ttyUSB0 esp8266_d1_mini    # Linux/Container
+#   ./recovery.sh /dev/ttyACM0 esp8266_generic     # Generic USB serial
+#   ./recovery.sh COM3 esp8266_d1_mini              # Windows
+#
+# Works in:
+#   - VS Code Dev Container (USB devices auto-mapped)
+#   - Native Linux/macOS installation
+#   - Windows (with PuTTY or similar toolchain)
+#
+# See RECOVERY.md for detailed instructions
 
 set -e
 
