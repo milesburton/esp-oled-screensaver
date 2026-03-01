@@ -19,7 +19,19 @@ Provides a consistent, reproducible development environment across Windows, macO
 - Build tools (compiler, linker, firmware generation)
 - Code quality tools (clang-format, cpplint, pre-commit)
 - Testing framework (AUnit)
+- GitHub CLI (`gh`) for repository operations
 - VS Code extensions (C/C++, git tools, formatters)
+
+## Credentials
+
+SSH keys, git config, and GitHub CLI credentials are automatically mounted from your host machine. No reauthentication required for git operations or `gh` commands.
+
+Mounted from host:
+- `~/.ssh` → SSH keys for git push/pull
+- `~/.gitconfig` → Git user identity and preferences
+- `~/.config/gh` → GitHub CLI authentication
+
+If `gh` commands fail, authenticate once on the host: `gh auth login`
 
 ## Usage
 

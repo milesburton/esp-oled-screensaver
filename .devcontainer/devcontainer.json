@@ -57,7 +57,11 @@
     "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin"
   },
   
-  "mounts": [],
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
+  ],
   
   "forwardPorts": [80, 23],
   "portsAttributes": {
