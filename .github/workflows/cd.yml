@@ -1,6 +1,10 @@
 name: Continuous Deployment
 
 on:
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
     inputs:
       version_bump:
@@ -61,17 +65,30 @@ jobs:
     permissions:
       contents: write
     outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
-      release_created: ${{ steps.version.outputs.release_created }}
+      new_version: ${{ steps.final_outputs.outputs.new_version }}
+      release_created: ${{ steps.final_outputs.outputs.release_created }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Check if version bump commit
+        id: check_commit
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if [[ "$COMMIT_MSG" == *"chore: bump version"* ]] || [[ "$COMMIT_MSG" == *"[skip-ci]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping release creation for version bump commit"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up secrets
+        if: steps.check_commit.outputs.skip == 'false'
         run: cp src/secrets.h.ci src/secrets.h
 
       - name: Get current version
+        if: steps.check_commit.outputs.skip == 'false'
         id: current_version
         run: |
           CURRENT=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
@@ -79,9 +96,11 @@ jobs:
           echo "Current version: $CURRENT"
 
       - name: Calculate new version
+        if: steps.check_commit.outputs.skip == 'false'
         id: version
         run: |
           CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
+          # Default to patch if not manually triggered
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
 
           # Parse semantic version
@@ -112,12 +131,14 @@ jobs:
           echo "New version: $NEW_VERSION"
 
       - name: Update version in Config.h
+        if: steps.check_commit.outputs.skip == 'false'
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
           sed -i "s/FW_VERSION = \"platform-[^\"]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
           echo "Updated version to platform-${NEW_VERSION}"
 
       - name: Commit version bump
+        if: steps.check_commit.outputs.skip == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -126,10 +147,23 @@ jobs:
           git push
 
       - name: Create and push tag
+        if: steps.check_commit.outputs.skip == 'false'
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
           git tag "v${NEW_VERSION}"
           git push origin "v${NEW_VERSION}"
+
+      - name: Set job outputs
+        id: final_outputs
+        if: always()
+        run: |
+          if [[ "${{ steps.check_commit.outputs.skip }}" == "true" ]]; then
+            echo "new_version=" >> $GITHUB_OUTPUT
+            echo "release_created=false" >> $GITHUB_OUTPUT
+          else
+            echo "new_version=${{ steps.version.outputs.new_version }}" >> $GITHUB_OUTPUT
+            echo "release_created=true" >> $GITHUB_OUTPUT
+          fi
 
   build-and-release:
     name: Build and Publish Release
