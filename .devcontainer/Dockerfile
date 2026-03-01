@@ -1,4 +1,4 @@
-FROM platformio/platformio-core:latest
+FROM python:3.11-slim
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python-based tools (pinned versions for reproducibility)
 RUN pip3 install --no-cache-dir \
+    "platformio==6.1.16" \
     "pre-commit==3.7.1" \
     "cpplint==1.6.1" \
     "nodeenv==1.8.0"
@@ -36,8 +37,7 @@ RUN groupadd --gid $USER_GID $USERNAME && \
 
 USER $USERNAME
 
-# Install PlatformIO as the vscode user
-RUN platformio update && \
-    platformio platform install espressif8266
+# Pre-install the ESP8266 platform for faster first-use
+RUN platformio platform install espressif8266
 
 WORKDIR /workspace
