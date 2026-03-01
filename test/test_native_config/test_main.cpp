@@ -1,7 +1,8 @@
 #include <unity.h>
-#include <cstring>
 
 #include "../../src/Config.h"
+
+#include <cstring>
 
 void test_hostname_is_set() {
   TEST_ASSERT_NOT_NULL(Config::HOSTNAME);
