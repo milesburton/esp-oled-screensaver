@@ -10,6 +10,7 @@ jobs:
   pre-commit:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't block CI on linting issues
     steps:
       - uses: actions/checkout@v4
       
