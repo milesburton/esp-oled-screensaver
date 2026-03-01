@@ -1,0 +1,28 @@
+# Secrets - NEVER commit these!
+secrets.h
+
+# Build artifacts
+build/
+*.hex
+*.bin
+*.elf
+*.map
+
+# Arduino/PlatformIO build files
+.pio/
+.vscode/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+*.sublime-*
+.idea/
