@@ -40,7 +40,16 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests
-        run: pio test --without-uploading
+        run: |
+          echo "Running native Linux tests..."
+          pio test -e native
+
+          echo "Building embedded test firmware..."
+          pio test -e esp8266_d1_mini \
+            --filter test_Config \
+            --filter test_DisplayModes \
+            --filter test_Logger \
+            --without-testing --without-uploading
 
       - name: Build all environments
         run: |

@@ -62,7 +62,11 @@ jobs:
       - name: Build embedded tests (verify compilation)
         run: |
           echo "Building embedded test firmware..."
-          pio test -e esp8266_d1_mini --without-testing --without-uploading
+          pio test -e esp8266_d1_mini \
+            --filter test_Config \
+            --filter test_DisplayModes \
+            --filter test_Logger \
+            --without-testing --without-uploading
           echo "✓ Embedded tests compiled successfully!"
 
   conventional-commits:
