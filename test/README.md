@@ -6,17 +6,12 @@ This directory contains unit and integration tests for the ESP8266 Weather Clock
 
 ```
 test/
-├── unit/                 - Unit tests for individual modules
-│   ├── test_Config/
-│   │   └── test_Config.ino
-│   ├── test_Logger/
-│   │   └── test_Logger.ino
-│   ├── test_DisplayManager/
-│   │   └── test_DisplayManager.ino
-│   ├── test_NetworkManager/
-│   │   └── test_NetworkManager.ino
-│   └── test_DisplayModes/
-│       └── test_DisplayModes.ino
+├── test_Config/          - Config module unit tests
+│   └── test_Config.ino
+├── test_Logger/          - Logger module unit tests
+│   └── test_Logger.ino
+├── test_DisplayModes/    - DisplayModes module unit tests
+│   └── test_DisplayModes.ino
 └── integration/          - Integration tests (coming soon)
     └── README.md
 ```
