@@ -1,6 +1,6 @@
 #include <AUnit.h>
 
-#include "../../../src/Config.h"
+#include "../../src/Config.h"
 
 // Test default OLED hardware configuration
 test(ConfigTest, DefaultOledSDA) { assertEqual(Config::OLED_SDA, 0); }

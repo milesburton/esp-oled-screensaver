@@ -1,9 +1,9 @@
 #include <AUnit.h>
 
-#include "../../../src/BoingMode.h"
-#include "../../../src/DisplayMode.h"
-#include "../../../src/StatusMode.h"
-#include "../../../src/WeatherMode.h"
+#include "../../src/BoingMode.h"
+#include "../../src/DisplayMode.h"
+#include "../../src/StatusMode.h"
+#include "../../src/WeatherMode.h"
 
 // Test StatusMode
 test(StatusModeTest, GetName) {

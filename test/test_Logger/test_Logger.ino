@@ -1,6 +1,6 @@
 #include <AUnit.h>
 
-#include "../../../src/Logger.h"
+#include "../../src/Logger.h"
 
 test(LoggerTest, PrintlnBasic) {
   // Logger should handle basic println
