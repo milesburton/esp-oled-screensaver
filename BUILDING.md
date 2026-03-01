@@ -27,7 +27,17 @@ cp secrets.h.template secrets.h
 |---|---|---|---|
 | `esp8266_d1_mini` | Wemos D1 Mini | 4MB | Recommended |
 | `esp8266_nodmcu` | NodeMCU v2 | 4MB | Common |
-| `esp8266_generic` | Generic ESP8266 | 1MB | Small flash |
+| `esp8266_generic` | Generic ESP8266 | 1MB | **Serial upload only** (OTA too large) |
+
+### Generic ESP8266 1MB Flash Board
+
+The generic ESP8266 board with 1MB flash has **very limited space**. The firmware (354KB) and OTA library overhead may exceed available space, resulting in an upload error: `ERROR[9]: new Flash config wrong, real size: 1048576`.
+
+**Solution:** Use serial upload instead of OTA:
+
+```bash
+pio run -e esp8266_generic -t upload
+```
 
 ## Building Firmware
 
