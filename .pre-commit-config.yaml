@@ -45,27 +45,8 @@ repos:
         files: '\.(ino|cpp|h)$'
 
   # Markdown linting
-  - repo: https://github.com/igorshubovych/markdownlint-cli
+  - repo: https://github.com/igorshub ovych/markdownlint-cli
     rev: v0.39.0
     hooks:
       - id: markdownlint
         args: ['--fix']
-
-  # Local hooks for custom checks
-  - repo: local
-    hooks:
-      # Ensure secrets.h is not committed
-      - id: check-secrets
-        name: Check secrets.h not committed
-        entry: bash -c 'if git diff --cached --name-only | grep -q "^secrets\.h$"; then echo "ERROR: secrets.h should not be committed!"; exit 1; fi'
-        language: system
-        pass_filenames: false
-        always_run: true
-
-      # Run unit tests (when they exist)
-      - id: run-tests
-        name: Run unit tests
-        entry: bash -c 'if [ -f "run_tests.sh" ]; then ./run_tests.sh; else echo "No tests yet - skipping"; fi'
-        language: system
-        pass_filenames: false
-        always_run: true

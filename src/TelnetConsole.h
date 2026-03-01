@@ -7,11 +7,9 @@
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
-
-// Forward declarations of mode classes
-class StatusMode;
-class BoingMode;
-class WeatherMode;
+#include "StatusMode.h"
+#include "BoingMode.h"
+#include "WeatherMode.h"
 
 class TelnetConsole {
  private:

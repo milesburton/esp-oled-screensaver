@@ -1,7 +1,8 @@
 #include <AUnit.h>
+
+#include "../../../src/BoingMode.h"
 #include "../../../src/DisplayMode.h"
 #include "../../../src/StatusMode.h"
-#include "../../../src/BoingMode.h"
 #include "../../../src/WeatherMode.h"
 
 // Test StatusMode
@@ -42,7 +43,7 @@ test(DisplayModeTest, NamesAreLowercase) {
   StatusMode status;
   BoingMode boing;
   WeatherMode weather;
-  
+
   // All mode names should be lowercase for consistency
   assertStringEqual("status", status.getName());
   assertStringEqual("boing", boing.getName());
@@ -53,7 +54,7 @@ test(DisplayModeTest, NamesAreUnique) {
   StatusMode status;
   BoingMode boing;
   WeatherMode weather;
-  
+
   // Names should be unique
   assertNotEqual(status.getName(), boing.getName());
   assertNotEqual(status.getName(), weather.getName());
@@ -79,6 +80,4 @@ void setup() {
   Serial.println("\n\n" __FILE__ " - DisplayMode Tests");
 }
 
-void loop() {
-  aunit::TestRunner::run();
-}
+void loop() { aunit::TestRunner::run(); }

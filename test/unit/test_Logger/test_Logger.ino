@@ -1,4 +1,5 @@
 #include <AUnit.h>
+
 #include "../../../src/Logger.h"
 
 test(LoggerTest, PrintlnBasic) {
@@ -15,7 +16,8 @@ test(LoggerTest, PrintlnEmpty) {
 
 test(LoggerTest, PrintlnLong) {
   // Logger should handle long strings
-  Logger::println("This is a very long message that should still be handled correctly");
+  Logger::println(
+      "This is a very long message that should still be handled correctly");
   assertTrue(true);
 }
 
@@ -57,6 +59,4 @@ void setup() {
   Serial.println("\n\n" __FILE__ " - Logger Module Tests");
 }
 
-void loop() {
-  aunit::TestRunner::run();
-}
+void loop() { aunit::TestRunner::run(); }

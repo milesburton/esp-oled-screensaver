@@ -1,18 +1,13 @@
 #include <AUnit.h>
+
 #include "../../../src/Config.h"
 
 // Test default OLED hardware configuration
-test(ConfigTest, DefaultOledSDA) {
-  assertEqual(Config::OLED_SDA, 0);
-}
+test(ConfigTest, DefaultOledSDA) { assertEqual(Config::OLED_SDA, 0); }
 
-test(ConfigTest, DefaultOledSCL) {
-  assertEqual(Config::OLED_SCL, 2);
-}
+test(ConfigTest, DefaultOledSCL) { assertEqual(Config::OLED_SCL, 2); }
 
-test(ConfigTest, DefaultOledAddress) {
-  assertEqual(Config::OLED_ADDR, 0x3C);
-}
+test(ConfigTest, DefaultOledAddress) { assertEqual(Config::OLED_ADDR, 0x3C); }
 
 // Test display dimensions
 test(ConfigTest, DefaultDisplayWidth) {
@@ -24,13 +19,9 @@ test(ConfigTest, DefaultDisplayHeight) {
 }
 
 // Test network port configuration
-test(ConfigTest, DefaultHTTPPort) {
-  assertEqual(Config::HTTP_PORT, 80);
-}
+test(ConfigTest, DefaultHTTPPort) { assertEqual(Config::HTTP_PORT, 80); }
 
-test(ConfigTest, DefaultTelnetPort) {
-  assertEqual(Config::TELNET_PORT, 23);
-}
+test(ConfigTest, DefaultTelnetPort) { assertEqual(Config::TELNET_PORT, 23); }
 
 // Test runtime configuration
 test(ConfigTest, RuntimeConfigDefaultDriver) {
@@ -66,7 +57,7 @@ test(ConfigTest, DriverSwitching) {
   Config::RuntimeConfig config;
   config.driver = Config::OledDriver::SSD1306;
   assertStringEqual("SSD1306", config.getDriverName());
-  
+
   config.driver = Config::OledDriver::SH1106;
   assertStringEqual("SH1106", config.getDriverName());
 }
@@ -76,10 +67,10 @@ test(ConfigTest, XOffsetConfiguration) {
   Config::RuntimeConfig config;
   config.xOffset = 0;
   assertEqual(config.xOffset, 0);
-  
+
   config.xOffset = 2;
   assertEqual(config.xOffset, 2);
-  
+
   config.xOffset = -2;
   assertEqual(config.xOffset, -2);
 }
@@ -88,10 +79,10 @@ test(ConfigTest, XOffsetConfiguration) {
 test(ConfigTest, OledToggle) {
   Config::RuntimeConfig config;
   assertTrue(config.oledEnabled);
-  
+
   config.oledEnabled = false;
   assertFalse(config.oledEnabled);
-  
+
   config.oledEnabled = true;
   assertTrue(config.oledEnabled);
 }
@@ -113,6 +104,4 @@ void setup() {
   Serial.println("\n\n" __FILE__ " - Config Module Tests");
 }
 
-void loop() {
-  aunit::TestRunner::run();
-}
+void loop() { aunit::TestRunner::run(); }
