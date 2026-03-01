@@ -56,10 +56,10 @@ jobs:
       - name: Build tests (verify compilation)
         run: |
           echo "Building test firmware to verify code compiles..."
-          # Build tests - they will fail at upload stage (no hardware) but that's expected
-          pio test --without-uploading 2>&1 | tee test_output.log || true
+          # --without-testing builds test firmware but doesn't execute tests
+          pio test --without-testing 2>&1 | tee test_output.log
           
-          # Check if tests actually built (firmware.elf files exist)
+          # Verify firmware binaries were created
           if ls .pio/build/*/test/*/firmware.elf 2>/dev/null | grep -q .; then
             echo "✓ All tests compiled successfully!"
             echo "Tests built: $(ls .pio/build/*/test/*/firmware.elf 2>/dev/null | wc -l)"
