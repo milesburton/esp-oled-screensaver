@@ -45,67 +45,72 @@ class NetworkManager {
 
   void setupRoutes() {
     http.on("/", HTTP_GET, [this]() {
-      String html;
-      html.reserve(2000);
+      http.setContentLength(CONTENT_LENGTH_UNKNOWN);
+      http.send(200, F("text/html; charset=utf-8"), "");
 
-      html += "<h1>" + String(Config::HOSTNAME) + "</h1>";
-      html += "<p><b>FW:</b> " + String(Config::FW_VERSION) + "</p>";
-      html += "<ul>";
-      html += "<li><b>WiFi:</b> " + String(wlStatusName(WiFi.status())) + "</li>";
-      html += "<li><b>IP:</b> " + WiFi.localIP().toString() + "</li>";
-      html +=
-          "<li><b>RSSI:</b> " + String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) + "</li>";
-      html += "<li><b>Heap:</b> " + String(ESP.getFreeHeap()) + "</li>";
+      http.sendContent(F("<h1>"));
+      http.sendContent(Config::HOSTNAME);
+      http.sendContent(F("</h1><p><b>FW:</b> "));
+      http.sendContent(Config::FW_VERSION);
+      http.sendContent(F("</p><ul>"));
+
+      http.sendContent(F("<li><b>WiFi:</b> "));
+      http.sendContent(wlStatusName(WiFi.status()));
+      http.sendContent(F("</li><li><b>IP:</b> "));
+      http.sendContent(WiFi.localIP().toString());
+      http.sendContent(F("</li><li><b>RSSI:</b> "));
+      http.sendContent(String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0));
+      http.sendContent(F("</li><li><b>Heap:</b> "));
+      http.sendContent(String(ESP.getFreeHeap()));
+      http.sendContent(F("</li>"));
 
       if (displayManager && displayManager->getCurrentMode()) {
-        html += "<li><b>Mode:</b> " + String(displayManager->getCurrentMode()->getName()) + "</li>";
+        http.sendContent(F("<li><b>Mode:</b> "));
+        http.sendContent(displayManager->getCurrentMode()->getName());
+        http.sendContent(F("</li>"));
       }
 
-      html += "<li><b>OLED:</b> " + String(Config::runtime.oledEnabled ? "on" : "off") + "</li>";
-      html += "<li><b>Driver:</b> " + String(Config::runtime.getDriverName()) + "</li>";
-      html += "<li><b>Rotation:</b> " + String(Config::runtime.getRotationName()) + "</li>";
-      html += "<li><b>X offset:</b> " + String(Config::runtime.xOffset) + "</li>";
-      html += "<li><b>I2C:</b> SDA=" + String(Config::OLED_SDA) +
-              " SCL=" + String(Config::OLED_SCL) + " addr=0x" + String(Config::OLED_ADDR, HEX) +
-              "</li>";
-      html += "</ul>";
+      http.sendContent(F("<li><b>OLED:</b> "));
+      http.sendContent(Config::runtime.oledEnabled ? "on" : "off");
+      http.sendContent(F("</li><li><b>Driver:</b> "));
+      http.sendContent(Config::runtime.getDriverName());
+      http.sendContent(F("</li><li><b>Rotation:</b> "));
+      http.sendContent(Config::runtime.getRotationName());
+      http.sendContent(F("</li><li><b>X offset:</b> "));
+      http.sendContent(String(Config::runtime.xOffset));
+      http.sendContent(F("</li><li><b>I2C:</b> SDA="));
+      http.sendContent(String(Config::OLED_SDA));
+      http.sendContent(F(" SCL="));
+      http.sendContent(String(Config::OLED_SCL));
+      http.sendContent(F(" addr=0x"));
+      http.sendContent(String(Config::OLED_ADDR, HEX));
+      http.sendContent(F("</li></ul>"));
 
-      html += "<p><a href='/update'>OTA Update</a></p>";
-
-      html += "<h3>Display Mode</h3>";
-      html += "<p>";
-      html += "<a href='/mode?m=status'>Status</a> | ";
-      html += "<a href='/mode?m=boing'>Boing</a> | ";
-      html += "<a href='/mode?m=weather'>Weather</a>";
-      html += "</p>";
-
-      html += "<h3>OLED Configuration</h3>";
-      html += "<p>Try these until border + text align perfectly:</p>";
-      html += "<ul>";
-      html +=
-          "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 "
-          "(common)</a></li>";
-      html += "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>";
-      html +=
-          "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 "
-          "(common)</a></li>";
-      html += "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
-      html += "</ul>";
-      html +=
-          "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED "
-          "OFF</a></p>";
-
-      html += "<h3>Display Rotation</h3>";
-      html += "<p>";
-      html += "<a href='/rotation?rot=0'>0°</a> | ";
-      html += "<a href='/rotation?rot=1'>90°</a> | ";
-      html += "<a href='/rotation?rot=2'>180°</a> | ";
-      html += "<a href='/rotation?rot=3'>270°</a>";
-      html += "</p>";
-
-      html += "<p><i>Telnet console on port 23</i></p>";
-
-      http.send(200, "text/html", html);
+      http.sendContent(
+          F("<p><a href='/update'>OTA Update</a></p>"
+            "<h3>Display Mode</h3>"
+            "<p>"
+            "<a href='/mode?m=status'>Status</a> | "
+            "<a href='/mode?m=boing'>Boing</a> | "
+            "<a href='/mode?m=weather'>Weather</a>"
+            "</p>"
+            "<h3>OLED Configuration</h3>"
+            "<p>Try these until border + text align perfectly:</p>"
+            "<ul>"
+            "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 (common)</a></li>"
+            "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>"
+            "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 (common)</a></li>"
+            "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>"
+            "</ul>"
+            "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED OFF</a></p>"
+            "<h3>Display Rotation</h3>"
+            "<p>"
+            "<a href='/rotation?rot=0'>0&#176;</a> | "
+            "<a href='/rotation?rot=1'>90&#176;</a> | "
+            "<a href='/rotation?rot=2'>180&#176;</a> | "
+            "<a href='/rotation?rot=3'>270&#176;</a>"
+            "</p>"
+            "<p><i>Telnet console on port 23</i></p>"));
     });
 
     http.on("/health", HTTP_GET, [this]() {
@@ -191,6 +196,17 @@ class NetworkManager {
       }
 
       http.sendHeader("Location", "/mode?m=status");
+      http.send(302, "text/plain", "");
+    });
+
+    http.on("/rotation", HTTP_GET, [this]() {
+      if (http.hasArg("rot")) {
+        int val = http.arg("rot").toInt();
+        if (val >= 0 && val <= 3 && displayManager) {
+          displayManager->setRotation(static_cast<Config::DisplayRotation>(val));
+        }
+      }
+      http.sendHeader("Location", "/");
       http.send(302, "text/plain", "");
     });
 

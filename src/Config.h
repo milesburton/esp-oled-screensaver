@@ -19,14 +19,6 @@ static constexpr const char* WIFI_PASS = secrets::WIFI_PASS;
 static constexpr const char* OTA_USER = secrets::OTA_USER;
 static constexpr const char* OTA_PASS = secrets::OTA_PASS;
 
-// Runtime WiFi credentials (loaded from EEPROM)
-struct RuntimeWiFiConfig {
-  char ssid[32] = {0};
-  char password[64] = {0};
-};
-
-extern RuntimeWiFiConfig runtimeWiFi;
-
 // ===== OLED Hardware =====
 static constexpr uint8_t OLED_SDA = 0;      // GPIO0
 static constexpr uint8_t OLED_SCL = 2;      // GPIO2

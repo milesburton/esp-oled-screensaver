@@ -59,10 +59,9 @@ test(DisplayModeTest, NamesAreUnique) {
   BoingMode boing;
   WeatherMode weather;
 
-  // Names should be unique
-  assertNotEqual(status.getName(), boing.getName());
-  assertNotEqual(status.getName(), weather.getName());
-  assertNotEqual(boing.getName(), weather.getName());
+  assertNotEqual(strcmp(status.getName(), boing.getName()), 0);
+  assertNotEqual(strcmp(status.getName(), weather.getName()), 0);
+  assertNotEqual(strcmp(boing.getName(), weather.getName()), 0);
 }
 
 // Test lifecycle methods exist (default empty implementations)
