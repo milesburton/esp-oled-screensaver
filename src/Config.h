@@ -7,7 +7,7 @@
 namespace Config {
 // ===== Identity =====
 static constexpr const char* HOSTNAME = "esp-weather-clock";
-static constexpr const char* FW_VERSION = "platform-1.0.0-modular";
+static constexpr const char* FW_VERSION = "platform-1.0.1";
 
 // ===== WiFi Credentials =====
 static constexpr const char* WIFI_SSID = secrets::WIFI_SSID;
