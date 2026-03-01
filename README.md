@@ -1,13 +1,13 @@
 # ESP8266 Weather Clock - OLED Display with WiFi
 
-ESP8266-based platform firmware featuring OLED display control, WiFi connectivity, OTA updates, and a Telnet console for remote debugging.
+ESP8266-based modular platform firmware featuring extensible OLED display modes, WiFi connectivity, OTA updates, and remote debugging capabilities.
 
 ## Features
 
 - 🖥️ **OLED Display Support**
   - Runtime-switchable drivers: SSD1306 / SH1106
   - Configurable X-offset for proper alignment
-  - Two display modes: Status display & Boing ball demo
+  - Modular, pluggable display modes
   
 - 📡 **WiFi & Network**
   - WiFi connectivity with auto-reconnect
@@ -15,14 +15,21 @@ ESP8266-based platform firmware featuring OLED display control, WiFi connectivit
   - OTA (Over-The-Air) firmware updates via ElegantOTA
   - Telnet console on port 23
   
-- 🎨 **Display Modes**
+- 🎨 **Display Modes** (Extensible!)
   - **Status Mode**: Shows device info, IP, firmware version
   - **Boing Mode**: Animated bouncing ball with rotation and squash/stretch physics
+  - **Weather Mode**: Placeholder for weather forecast display (TODO)
+  - Easy to add new custom modes!
   
 - 🛠️ **Remote Management**
   - Web dashboard at `http://[device-ip]/`
   - OTA updates at `http://[device-ip]/update`
   - Telnet console for live debugging
+
+- 🏗️ **Clean Architecture**
+  - Modular design following single responsibility principle
+  - Easy to understand, maintain, and extend
+  - Pluggable display mode system
 
 ## Hardware
 
@@ -108,7 +115,7 @@ Available commands:
 - `status` - Display device status
 - `drv ssd1306|sh1106` - Switch OLED driver
 - `xoff <int>` - Set X offset (e.g., `xoff 0` or `xoff 2`)
-- `mode status|boing` - Switch display mode
+- `mode status|boing|weather` - Switch display mode
 - `oled on|off` - Enable/disable OLED
 - `reboot` - Restart the device
 
@@ -156,16 +163,86 @@ static constexpr const char* FW_VERSION = "platform-0.5.0-boing-auto";
 - Verify device is on same network
 - Try pinging the device
 
-## Development
+## Architecture
 
-### Firmware Version
-Current version: `platform-0.5.0-boing-auto`
+The codebase follows a modular architecture with clear separation of concerns:
 
-### Architecture
-- Main loop runs at ~1ms cycle time
+```
+OA_OLED_Display_with_wifi_working/
+├── OA_OLED_Display_with_wifi_working.ino  # Main entry point (setup/loop)
+├── Config.h / Config.cpp                   # Configuration and constants
+├── Logger.h                                # Logging utility
+├── DisplayManager.h                        # OLED display management
+├── NetworkManager.h                        # WiFi and HTTP server
+├── TelnetConsole.h                         # Telnet remote console
+├── DisplayMode.h                           # Abstract base class for modes
+├── StatusMode.h                            # Status display implementation
+├── BoingMode.h                             # Boing animation implementation
+├── WeatherMode.h                           # Weather forecast (placeholder)
+├── secrets.h.template                      # Credentials template
+└── secrets.h                               # Your actual credentials (gitignored)
+```
+
+### Core Components
+
+- **Config**: Centralized configuration (hardware pins, network settings, runtime config)
+- **Logger**: Unified logging to Serial and Telnet
+- **DisplayManager**: Manages OLED hardware and display mode lifecycle
+- **NetworkManager**: Handles WiFi connection, HTTP server, and OTA updates
+- **TelnetConsole**: Remote command-line interface
+- **DisplayMode**: Abstract interface that all display modes implement
+
+### Adding New Display Modes
+
+Creating a new display mode is simple:
+
+1. **Create a new header file** (e.g., `ClockMode.h`)
+2. **Inherit from `DisplayMode`**
+3. **Implement required methods**:
+   - `getName()` - Return mode name
+   - `update(U8G2* display, uint32_t deltaMs)` - Render your content
+   - Optional: `begin()` and `end()` for mode lifecycle
+
+Example:
+
+```cpp
+#pragma once
+#include "DisplayMode.h"
+#include "DisplayManager.h"
+
+class ClockMode : public DisplayMode {
+public:
+  const char* getName() const override {
+    return "clock";
+  }
+  
+  void update(U8G2* u8g2, uint32_t deltaMs) override {
+    u8g2->clearBuffer();
+    u8g2->setFont(u8g2_font_10x20_tf);
+    
+    // Draw your content here
+    DisplayManager::drawStr(u8g2, 10, 30, "12:34:56");
+    
+    u8g2->sendBuffer();
+  }
+};
+```
+
+4. **Register your mode** in the main `.ino` file:
+   - Instantiate it
+   - Add it to `NetworkManager` and `TelnetConsole`
+   - Users can now switch to it via web or telnet!
+
+### Performance
+
+- Main loop: ~1ms cycle time
 - Boing mode: ~25 FPS (40ms per frame)
 - Status mode: ~2.5 FPS (400ms refresh)
+- Weather mode: 5 second refresh (configurable)
 - WiFi status logged every second
+
+### Firmware Version
+Current version: `platform-1.0.0-modular`
 
 ## License
 
