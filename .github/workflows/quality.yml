@@ -55,20 +55,15 @@ jobs:
       
       - name: Build tests (verify compilation)
         run: |
-          echo "Building test firmware to verify code compiles..."
-          # --without-testing builds test firmware but doesn't execute tests
-          pio test --without-testing 2>&1 | tee test_output.log
+          echo "Building test firmware..."
+          # Build tests using filter to build one at a time
+          # Use serial protocol to avoid OTA upload_port requirement
+          for test in test_Config test_DisplayModes test_Logger; do
+            echo "Building ${test}..."
+            PLATFORMIO_TEST_FILTER="${test}" pio test --without-testing --without-uploading --upload-protocol=esptool || exit 1
+          done
           
-          # Verify firmware binaries were created
-          if ls .pio/build/*/test/*/firmware.elf 2>/dev/null | grep -q .; then
-            echo "✓ All tests compiled successfully!"
-            echo "Tests built: $(ls .pio/build/*/test/*/firmware.elf 2>/dev/null | wc -l)"
-            exit 0
-          else
-            echo "✗ Test compilation failed"
-            grep -i "error\|failed" test_output.log || true
-            exit 1
-          fi
+          echo "✓ All tests compiled successfully!"
   
   conventional-commits:
     name: Conventional Commits
