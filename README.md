@@ -1,45 +1,38 @@
 # ESP8266 Weather Clock - OLED Display with WiFi
 
-ESP8266-based modular platform firmware featuring extensible OLED display modes, WiFi connectivity, OTA updates, and remote debugging capabilities.
+Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes, WiFi connectivity, OTA updates, and remote debugging via Telnet.
 
 ## Features
 
-- 🖥️ **OLED Display Support**
-  - Runtime-switchable drivers: SSD1306 / SH1106
-  - Configurable X-offset for proper alignment
-  - Modular, pluggable display modes
-  
-- 📡 **WiFi & Network**
-  - WiFi connectivity with auto-reconnect
-  - Web interface for configuration
-  - OTA (Over-The-Air) firmware updates via ElegantOTA
-  - Telnet console on port 23
-  
-- 🎨 **Display Modes** (Extensible!)
-  - **Status Mode**: Shows device info, IP, firmware version
-  - **Boing Mode**: Animated bouncing ball with rotation and squash/stretch physics
-  - **Weather Mode**: Placeholder for weather forecast display (TODO)
-  - Easy to add new custom modes!
-  
-- 🛠️ **Remote Management**
-  - Web dashboard at `http://[device-ip]/`
-  - OTA updates at `http://[device-ip]/update`
-  - Telnet console for live debugging
+**OLED Display**
+- Runtime-switchable drivers (SSD1306 / SH1106)
+- Configurable X-offset for alignment
+- Pluggable display mode system
 
-- 🏗️ **Clean Architecture**
-  - Modular design following single responsibility principle
-  - Easy to understand, maintain, and extend
-  - Pluggable display mode system
+**Networking**
+- WiFi connectivity with auto-reconnect
+- Web interface for configuration and OTA updates
+- Telnet console (port 23) for remote debugging
+- Multi-board support: Wemos D1 Mini, NodeMCU, Generic ESP8266
+
+**Display Modes** (Extensible)
+- Status: Device info, IP address, firmware version
+- Boing: Animated bouncing ball with rotation and physics
+- Weather: Placeholder for weather API integration
+
+**Development**
+- Modular architecture with single responsibility principle
+- Pre-commit hooks (clang-format, cpplint, conventional commits)
+- Automated tests and CI/CD
+- Development container for zero-config setup
 
 ## Hardware
 
-### Required Components
+**Required**
 - ESP8266 board (NodeMCU, Wemos D1 Mini, etc.)
 - 128x64 OLED display (SSD1306 or SH1106)
-- Connecting wires
 
-### Wiring
-
+**Wiring**
 | OLED Pin | ESP8266 Pin |
 |----------|-------------|
 | SDA      | GPIO0       |
@@ -47,304 +40,180 @@ ESP8266-based modular platform firmware featuring extensible OLED display modes,
 | VCC      | 3.3V        |
 | GND      | GND         |
 
-**I2C Address**: 0x3C (configurable at compile time)
+I2C Address: 0x3C (configurable at compile time)
 
-## Development
+## Quick Start
 
-### Quick Start with Development Container
-
-This project includes a **Development Container** for a consistent, zero-configuration development environment.
-
-**Prerequisites**: Docker and VS Code with Remote Containers extension
-
-**Steps**:
-1. Open folder in VS Code
-2. Click **"Reopen in Container"** when prompted
-3. Done! All tools are ready
-
-[📖 Full devcontainer guide →](.devcontainer/README.md)
-
-### Code Quality Tools
-
-This project uses automated code quality checks:
-
-- **Pre-commit hooks** - Auto-format and lint code before commits
-- **CI/CD Pipeline** - Automated tests and builds on every push
-- **Conventional Commits** - Enforced commit message format
-- **C++ Linting** - clang-format and cpplint
-- **Unit Tests** - AUnit framework (tests in progress)
-
-### Building & Deployment
-
-#### Build Tools
-
-- **PlatformIO** - Primary build tool
-- **Support for multiple boards**:
-  - Wemos D1 Mini (4MB) - ✅ Recommended
-  - NodeMCU v2 (4MB)
-  - Generic ESP8266 (1MB)
-
-#### Quick Build
+### With Development Container (Recommended)
 
 ```bash
-# Install PlatformIO
-pip install platformio
+# Prerequisites: Docker and VS Code with Remote Containers extension
+code .
+# Click "Reopen in Container"
+./build.sh esp8266_d1_mini
+```
 
-# Build firmware
+See [.devcontainer/README.md](.devcontainer/README.md) for full details.
+
+### Local Installation
+
+```bash
+pip install platformio pre-commit
+pre-commit install --hook-type commit-msg
+
+# Configure credentials
+cp secrets.h.template secrets.h
+# Edit secrets.h with WiFi credentials
+
+# Build
 ./build.sh esp8266_d1_mini
 
 # Upload via OTA
-http://<device-ip>/update
+# Navigate to http://<device-ip>/update
 ```
 
-See [BUILDING.md](BUILDING.md) for complete build and deployment guide.
+## Building
 
-### Development Setup
+Supported environments in `platformio.ini`:
+- `esp8266_d1_mini` (4MB) - Recommended
+- `esp8266_nodmcu` (4MB)
+- `esp8266_generic` (1MB)
 
 ```bash
-# Install pre-commit
-pip install pre-commit
+# Build for specific board
+./build.sh esp8266_nodmcu
 
-# Set up hooks
-pre-commit install
-pre-commit install --hook-type commit-msg
+# Build and test
+pio run -e esp8266_d1_mini
+pio test --without-uploading
 
-# Run checks manually
-pre-commit run --all-files
+# Monitor serial output
+pio device monitor -b 115200
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
+Output binaries are written to `firmware/` directory.
 
-### Commit Message Format
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```bash
-feat(modes): add new clock display mode
-fix(display): correct alignment for SH1106
-docs(readme): update installation instructions
-```
-
-Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-## Setup
-
-### 1. Install Dependencies
-
-Install the following libraries via Arduino IDE Library Manager:
-
-- ESP8266WiFi (included with ESP8266 board package)
-- ESP8266WebServer (included with ESP8266 board package)
-- ElegantOTA
-- U8g2lib
-
-### 2. Configure Secrets
-
-Copy the template and add your credentials:
-
-```bash
-cp secrets.h.template secrets.h
-```
-
-Edit `secrets.h` with your WiFi credentials and OTA password:
-
-```cpp
-namespace secrets {
-  static constexpr const char* WIFI_SSID = "YourWiFiSSID";
-  static constexpr const char* WIFI_PASS = "YourWiFiPassword";
-  static constexpr const char* OTA_USER  = "admin";
-  static constexpr const char* OTA_PASS  = "SecurePassword123";
-}
-```
-
-**⚠️ Important**: Never commit `secrets.h` to version control!
-
-### 3. Upload Firmware
-
-1. Open `OA_OLED_Display_with_wifi_working.ino` in Arduino IDE
-2. Select your ESP8266 board and port
-3. Click Upload
-
-### 4. Find Your Device
-
-Check Serial Monitor (115200 baud) for the assigned IP address, or check your router's DHCP client list for device hostname: `esp-weather-clock`
+See [BUILDING.md](BUILDING.md) for complete build guide.
 
 ## Usage
 
-### Web Interface
+**Web Interface**: `http://<device-ip>/`
+- Device status
+- Mode switching
+- OLED configuration
+- OTA firmware updates
 
-Navigate to `http://[device-ip]/` to access:
-- Device status and information
-- Mode switching (Boing / Status)
-- OLED configuration (driver type, X offset)
-- OTA update interface
-- OLED on/off toggle
-
-### Telnet Console
-
-Connect via telnet for live debugging:
-
-```bash
-telnet [device-ip] 23
-```
-
-Available commands:
-- `help` - Show command list
-- `status` - Display device status
-- `drv ssd1306|sh1106` - Switch OLED driver
-- `xoff <int>` - Set X offset (e.g., `xoff 0` or `xoff 2`)
+**Telnet Console**: `telnet <device-ip> 23`
+- `help` - Command list
+- `status` - Device status
 - `mode status|boing|weather` - Switch display mode
-- `oled on|off` - Enable/disable OLED
-- `reboot` - Restart the device
+- `drv ssd1306|sh1106` - Set OLED driver
+- `xoff <int>` - Set X offset (e.g., `xoff 0`)
+- `oled on|off` - Enable/disable display
+- `reboot` - Restart device
 
-### OTA Updates
-
-1. Navigate to `http://[device-ip]/update`
-2. Login with credentials from `secrets.h`
-3. Upload new `.bin` firmware file
-
-## Configuration
-
-### OLED Driver & Alignment
-
-If your display shows misaligned content:
-
-1. Try different driver/offset combinations via web interface
-2. Common configurations:
-   - **SH1106**: Usually needs `xoff=2`
-   - **SSD1306**: Usually needs `xoff=0`
-3. Use Status mode to verify alignment (border should be perfect)
-
-### Customization
-
-Edit these constants in the `.ino` file:
-
-```cpp
-static constexpr const char* HOSTNAME   = "esp-weather-clock";
-static constexpr const char* FW_VERSION = "platform-0.5.0-boing-auto";
-```
-
-## Troubleshooting
-
-**Display not working?**
-- Check I2C wiring (SDA, SCL)
-- Try both drivers: SSD1306 and SH1106
-- Adjust X offset via web interface or Telnet
-
-**WiFi not connecting?**
-- Verify credentials in `secrets.h`
-- Check Serial Monitor for connection status
-- Ensure 2.4GHz WiFi (ESP8266 doesn't support 5GHz)
-
-**Can't access web interface?**
-- Check Serial Monitor for IP address
-- Verify device is on same network
-- Try pinging the device
+**OTA Updates**: `http://<device-ip>/update`
+- Login with credentials from `secrets.h`
+- Upload new `.bin` firmware file
 
 ## Architecture
 
-The codebase follows a modular architecture with clear separation of concerns:
-
 ```
-esp8266-weather-clock/
-├── src/                              # Source code
-│   ├── OA_OLED_Display_with_wifi_working.ino  # Main sketch
-│   ├── Config.h / Config.cpp         # Configuration & constants
-│   ├── Logger.h                      # Logging utility
-│   ├── DisplayManager.h              # OLED display management
-│   ├── NetworkManager.h              # WiFi & HTTP server
-│   ├── TelnetConsole.h               # Telnet remote console
-│   ├── DisplayMode.h                 # Display mode base class
-│   ├── StatusMode.h                  # Status display mode
-│   ├── BoingMode.h                   # Bouncing ball animation
-│   └── WeatherMode.h                 # Weather forecast (placeholder)
-│
-├── test/                             # Test suite
-│   ├── unit/                         # Unit tests
-│   │   ├── test_Config/              # Config tests
-│   │   ├── test_Logger/              # Logger tests
-│   │   ├── test_DisplayModes/        # DisplayMode tests
-│   │   └── README.md
-│   │
-│   └── integration/                  # Integration tests (coming soon)
-│       └── README.md
-│
-├── platformio.ini                    # PlatformIO build config
-├── build.sh / build.bat              # Build scripts
-├── secrets.h.template                # Credentials template
-├── CONTRIBUTING.md                   # Development guidelines
-├── BUILDING.md                       # Build & deployment guide
-└── README.md                         # This file
+src/
+├── OA_OLED_Display_with_wifi_working.ino  # Main sketch (~60 lines)
+├── Config.h / Config.cpp                  # Configuration & constants
+├── Logger.h                               # Unified logging
+├── DisplayManager.h                       # OLED management
+├── NetworkManager.h                       # WiFi & HTTP server
+├── TelnetConsole.h                        # Remote console
+├── DisplayMode.h                          # Mode base class
+├── StatusMode.h                           # Status display
+├── BoingMode.h                            # Animation demo
+└── WeatherMode.h                          # Weather placeholder
+
+test/
+├── unit/                                  # AUnit tests
+│   ├── test_Config/
+│   ├── test_Logger/
+│   └── test_DisplayModes/
+└── integration/                           # Coming soon
 ```
 
 ### Core Components
 
-- **Config**: Centralized configuration (hardware pins, network settings, runtime config)
-- **Logger**: Unified logging to Serial and Telnet
-- **DisplayManager**: Manages OLED hardware and display mode lifecycle
-- **NetworkManager**: Handles WiFi connection, HTTP server, and OTA updates
-- **TelnetConsole**: Remote command-line interface
-- **DisplayMode**: Abstract interface that all display modes implement
+- **Config**: Hardware pins, runtime settings, OLED driver selection
+- **Logger**: Serial + Telnet logging
+- **DisplayManager**: OLED driver lifecycle and mode switching
+- **NetworkManager**: WiFi, HTTP server, OTA
+- **TelnetConsole**: Remote debugging interface
+- **DisplayMode**: Abstract base for all display implementations
 
-### Adding New Display Modes
+## Adding Display Modes
 
-Creating a new display mode is simple:
-
-1. **Create a new header file** (e.g., `ClockMode.h`)
-2. **Inherit from `DisplayMode`**
-3. **Implement required methods**:
-   - `getName()` - Return mode name
-   - `update(U8G2* display, uint32_t deltaMs)` - Render your content
-   - Optional: `begin()` and `end()` for mode lifecycle
-
-Example:
+Create a new header file inheriting from `DisplayMode`:
 
 ```cpp
 #pragma once
 #include "DisplayMode.h"
-#include "DisplayManager.h"
 
-class ClockMode : public DisplayMode {
+class MyMode : public DisplayMode {
 public:
   const char* getName() const override {
-    return "clock";
+    return "mymode";
   }
   
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_10x20_tf);
-    
-    // Draw your content here
-    DisplayManager::drawStr(u8g2, 10, 30, "12:34:56");
-    
+    u8g2->drawStr(10, 30, "Hello!");
     u8g2->sendBuffer();
   }
 };
 ```
 
-4. **Register your mode** in the main `.ino` file:
-   - Instantiate it
-   - Add it to `NetworkManager` and `TelnetConsole`
-   - Users can now switch to it via web or telnet!
+Register in the main `.ino` file and expose via web/Telnet interfaces.
 
-### Performance
+## Development
+
+Code standards enforced by pre-commit hooks:
+- **C++ Formatting**: clang-format (Google style, 100 char lines)
+- **Linting**: cpplint
+- **Commits**: Conventional commits format
+- **Testing**: AUnit framework
+
+Run checks manually:
+```bash
+pre-commit run --all-files
+pio test --without-uploading
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Configuration
+
+Edit compile-time constants in `src/Config.h`:
+- OLED SDA/SCL pins (GPIO0, GPIO2)
+- WiFi hostname
+- HTTP/Telnet ports
+- Default driver and X-offset
+
+Runtime configuration via web interface or Telnet console:
+- OLED driver type
+- X-offset for alignment
+- Display enable/disable
+- Active display mode
+
+## Performance
 
 - Main loop: ~1ms cycle time
-- Boing mode: ~25 FPS (40ms per frame)
-- Status mode: ~2.5 FPS (400ms refresh)
-- Weather mode: 5 second refresh (configurable)
-- WiFi status logged every second
+- Boing mode: ~25 FPS
+- Status mode: ~2.5 FPS
+- WiFi status: logged every second
 
-### Firmware Version
-Current version: `platform-1.0.0-modular`
+## References
 
-## License
-
-MIT License - Feel free to modify and use for your projects!
-
-## Credits
-
-Built with:
+- [PlatformIO Docs](https://docs.platformio.org/)
+- [ESP8266 Arduino Core](https://github.com/esp8266/Arduino)
+- [U8g2 Graphics Library](https://github.com/olikraus/u8g2)
 - [ElegantOTA](https://github.com/ayushsharma82/ElegantOTA)
-- [U8g2](https://github.com/olikraus/u8g2)
-- ESP8266 Arduino Core
+- [Conventional Commits](https://www.conventionalcommits.org/)
