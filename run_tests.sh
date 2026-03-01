@@ -1,5 +1,6 @@
 #!/bin/bash
 # Test runner script for pre-commit hooks
+# Tests are organized in test/unit/ and test/integration/ directories
 
 set -e
 
@@ -12,9 +13,9 @@ if command -v pio &> /dev/null; then
         echo "PlatformIO tests not configured yet - skipping"
         exit 0
     }
-elif [ -d "tests" ]; then
-    echo "Tests directory exists but no test runner configured yet"
-    echo "TODO: Set up PlatformIO or Arduino CLI for automated testing"
+elif [ -d "test/unit" ]; then
+    echo "Test directory exists but no test runner configured yet"
+    echo "TODO: Set up PlatformIO for automated testing"
     exit 0
 else
     echo "No tests configured yet - skipping"

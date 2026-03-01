@@ -233,19 +233,35 @@ static constexpr const char* FW_VERSION = "platform-0.5.0-boing-auto";
 The codebase follows a modular architecture with clear separation of concerns:
 
 ```
-OA_OLED_Display_with_wifi_working/
-├── OA_OLED_Display_with_wifi_working.ino  # Main entry point (setup/loop)
-├── Config.h / Config.cpp                   # Configuration and constants
-├── Logger.h                                # Logging utility
-├── DisplayManager.h                        # OLED display management
-├── NetworkManager.h                        # WiFi and HTTP server
-├── TelnetConsole.h                         # Telnet remote console
-├── DisplayMode.h                           # Abstract base class for modes
-├── StatusMode.h                            # Status display implementation
-├── BoingMode.h                             # Boing animation implementation
-├── WeatherMode.h                           # Weather forecast (placeholder)
-├── secrets.h.template                      # Credentials template
-└── secrets.h                               # Your actual credentials (gitignored)
+esp8266-weather-clock/
+├── src/                              # Source code
+│   ├── OA_OLED_Display_with_wifi_working.ino  # Main sketch
+│   ├── Config.h / Config.cpp         # Configuration & constants
+│   ├── Logger.h                      # Logging utility
+│   ├── DisplayManager.h              # OLED display management
+│   ├── NetworkManager.h              # WiFi & HTTP server
+│   ├── TelnetConsole.h               # Telnet remote console
+│   ├── DisplayMode.h                 # Display mode base class
+│   ├── StatusMode.h                  # Status display mode
+│   ├── BoingMode.h                   # Bouncing ball animation
+│   └── WeatherMode.h                 # Weather forecast (placeholder)
+│
+├── test/                             # Test suite
+│   ├── unit/                         # Unit tests
+│   │   ├── test_Config/              # Config tests
+│   │   ├── test_Logger/              # Logger tests
+│   │   ├── test_DisplayModes/        # DisplayMode tests
+│   │   └── README.md
+│   │
+│   └── integration/                  # Integration tests (coming soon)
+│       └── README.md
+│
+├── platformio.ini                    # PlatformIO build config
+├── build.sh / build.bat              # Build scripts
+├── secrets.h.template                # Credentials template
+├── CONTRIBUTING.md                   # Development guidelines
+├── BUILDING.md                       # Build & deployment guide
+└── README.md                         # This file
 ```
 
 ### Core Components

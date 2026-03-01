@@ -137,9 +137,9 @@ Common scopes:
 
 ## Adding New Display Modes
 
-1. **Create mode header file**
+1. **Create mode header file in `src/`**
    ```cpp
-   // MyMode.h
+   // src/MyMode.h
    #pragma once
    #include "DisplayMode.h"
    
@@ -152,9 +152,8 @@ Common scopes:
    };
    ```
 
-2. **Register in main file**
+2. **Register in main sketch** (`src/OA_OLED_Display_with_wifi_working.ino`)
    ```cpp
-   // In .ino file
    #include "MyMode.h"
    MyMode myMode;
    
@@ -163,21 +162,30 @@ Common scopes:
    telnetConsole.setModes(&statusMode, &boingMode, &myMode);
    ```
 
-3. **Add tests**
+3. **Add unit test** in `test/unit/test_MyMode/test_MyMode.ino`
    ```cpp
-   // tests/test_MyMode/test_MyMode.ino
    #include <AUnit.h>
-   #include "../../MyMode.h"
+   #include "../../../src/MyMode.h"
    
    test(MyModeTest, GetName) {
      MyMode mode;
-     assertEqual(mode.getName(), "mymode");
+     assertStringEqual("mymode", mode.getName());
+   }
+   
+   void setup() {
+     Serial.begin(115200);
+     while (!Serial);
+   }
+   
+   void loop() {
+     aunit::TestRunner::run();
    }
    ```
 
 4. **Update documentation**
    - Add mode description to README.md
-   - Document any configuration options
+   - Document configuration options
+   - Add telnet command documentation
 
 ## Pull Request Process
 

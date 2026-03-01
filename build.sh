@@ -19,7 +19,7 @@ DEFAULT_ENV="esp8266_d1_mini"
 TARGET_ENV="${1:-$DEFAULT_ENV}"
 BUILD_DIR=".pio/build/$TARGET_ENV"
 FIRMWARE_DIR="firmware"
-VERSION=$(grep 'FW_VERSION' Config.h | grep -oP '"platform-\K[^"]+')
+VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 echo -e "${YELLOW}================================================${NC}"
