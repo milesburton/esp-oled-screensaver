@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     fish \
     git \
+    lolcat \
     openssh-client \
     sudo \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \

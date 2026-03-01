@@ -11,12 +11,10 @@ alias clean   'pio run --target clean'
 alias check   'pre-commit run --all-files'
 
 function fish_greeting
-    set_color brblue
-    echo '+---------------------------------------------------------+'
-    echo '|          ESP8266-OLED-Experiment  dev container         |'
-    echo '|   ESP8266 D1 Mini  *  128x64 OLED  *  WiFi  *  OTA     |'
-    echo '+---------------------------------------------------------+'
-    set_color normal
+    echo '+---------------------------------------------------------+' | lolcat
+    echo '|          ESP8266-OLED-Experiment  dev container         |' | lolcat
+    echo '|   ESP8266 D1 Mini  *  128x64 OLED  *  WiFi  *  OTA     |' | lolcat
+    echo '+---------------------------------------------------------+' | lolcat
     echo ''
     echo '  build    pio run -e esp8266_d1_mini'
     echo '  upload   pio run -e esp8266_d1_mini --target upload'
