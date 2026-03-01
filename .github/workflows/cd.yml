@@ -237,7 +237,7 @@ jobs:
           body: |
             ## ESP8266 Weather Clock v${{ needs.create-release.outputs.new_version }}
 
-            **Release Date**: ${{ github.event.head_commit.timestamp }}
+            **Release Date**: ${{ github.event.repository.updated_at }}
             **Commit**: ${{ github.sha }}
 
             ### Changes

@@ -32,6 +32,12 @@ static constexpr int DISPLAY_HEIGHT = 64;
 static constexpr uint16_t HTTP_PORT = 80;
 static constexpr uint16_t TELNET_PORT = 23;
 
+// ===== Boing Animation =====
+static constexpr int BOING_BALL_RADIUS = 12;      // Ball radius in pixels
+static constexpr float BOING_X_SPEED = 52.0f;     // Horizontal speed (px/s)
+static constexpr float BOING_BOUNCE_FREQ = 0.75f; // Bounces per second
+static constexpr float BOING_BOUNCE_HEIGHT = 34.0f; // Max bounce height in pixels
+
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
 

@@ -1,10 +1,6 @@
 name: Release Build
 
 on:
-  push:
-    tags:
-      - 'v*'
-      - 'release-*'
   workflow_dispatch:
 
 jobs:
@@ -103,7 +99,7 @@ jobs:
             ## ESP8266 Weather Clock Firmware Release
 
             **Version**: v${{ steps.version.outputs.version }}
-            **Date**: ${{ github.event.head_commit.timestamp }}
+            **Date**: ${{ github.event.repository.updated_at }}
             **Commit**: ${{ github.sha }}
 
             ### Supported Boards

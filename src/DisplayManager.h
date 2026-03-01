@@ -90,6 +90,7 @@ class DisplayManager {
   U8G2* getDisplay() { return u8g2; }
   DisplayMode* getCurrentMode() { return currentMode; }
 
+
   // Drawing helpers with X offset
   static void drawPixel(U8G2* u8g2, int x, int y) {
     u8g2->drawPixel(x + Config::runtime.xOffset, y);

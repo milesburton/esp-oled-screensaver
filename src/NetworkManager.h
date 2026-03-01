@@ -5,12 +5,10 @@
 
 #include <ElegantOTA.h>
 
-#include "BoingMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
-#include "StatusMode.h"
-#include "WeatherMode.h"
+#include "ModeHelper.h"
 
 class NetworkManager {
  private:
@@ -19,6 +17,11 @@ class NetworkManager {
   StatusMode* statusMode;
   BoingMode* boingMode;
   WeatherMode* weatherMode;
+
+  // WiFi reconnection state
+  uint32_t wifiRetryMs = 0;
+  uint32_t wifiRetryIntervalMs = 5000;  // Start at 5s
+  static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;  // Cap at 5 min
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -107,15 +110,12 @@ class NetworkManager {
 
       if (http.hasArg("m")) {
         String mode = http.arg("m");
-        mode.toLowerCase();
-
-        if (mode == "status" && statusMode) {
-          displayManager->setMode(statusMode, 400);  // 2.5 FPS
-        } else if (mode == "boing" && boingMode) {
-          displayManager->setMode(boingMode, 40);  // 25 FPS
-        } else if (mode == "weather" && weatherMode) {
-          displayManager->setMode(weatherMode, 5000);  // Every 5 seconds
+        if (mode.length() > 16) {
+          http.send(400, "text/plain", "Bad request");
+          return;
         }
+        mode.toLowerCase();
+        setModeByName(displayManager, mode, statusMode, boingMode, weatherMode);
       }
 
       http.sendHeader("Location", "/");
@@ -143,13 +143,20 @@ class NetworkManager {
     http.on("/oledcfg", HTTP_GET, [this]() {
       if (http.hasArg("drv")) {
         String d = http.arg("drv");
+        if (d.length() > 16) {
+          http.send(400, "text/plain", "Bad request");
+          return;
+        }
         d.toLowerCase();
         Config::runtime.driver =
             (d == "ssd1306") ? Config::OledDriver::SSD1306 : Config::OledDriver::SH1106;
       }
 
       if (http.hasArg("xoff")) {
-        Config::runtime.xOffset = http.arg("xoff").toInt();
+        int val = http.arg("xoff").toInt();
+        if (val >= -20 && val <= 20) {
+          Config::runtime.xOffset = val;
+        }
       }
 
       Logger::printf("OLED config: drv=%s xoff=%d", Config::runtime.getDriverName(),
@@ -213,6 +220,24 @@ class NetworkManager {
   void update() {
     http.handleClient();
     ElegantOTA.loop();
+
+    // Reconnect with exponential backoff on connection failure
+    wl_status_t status = WiFi.status();
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST ||
+        status == WL_DISCONNECTED) {
+      uint32_t now = millis();
+      if (now - wifiRetryMs >= wifiRetryIntervalMs) {
+        Logger::printf("WiFi: reconnecting (interval=%lus)...", wifiRetryIntervalMs / 1000);
+        WiFi.disconnect();
+        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+        wifiRetryMs = now;
+        // Double the interval up to the cap
+        wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
+      }
+    } else if (status == WL_CONNECTED) {
+      // Reset backoff on successful connection
+      wifiRetryIntervalMs = 5000;
+    }
   }
 
   void logStatus() {

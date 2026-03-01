@@ -9,15 +9,15 @@ class BoingMode : public DisplayMode {
   static constexpr int W = Config::DISPLAY_WIDTH;
   static constexpr int H = Config::DISPLAY_HEIGHT;
 
-  static constexpr int R0 = 12;
+  static constexpr int R0 = Config::BOING_BALL_RADIUS;
   static constexpr int FLOOR_LINE_Y = H - 1;
   static constexpr int FLOOR_Y = H - 2;
   static constexpr int LEFT_X = R0 + 2;
   static constexpr int RIGHT_X = W - 1 - (R0 + 2);
 
-  static constexpr float X_SPEED = 52.0f;      // px/s
-  static constexpr float BOUNCE_FREQ = 0.75f;  // bounces per second
-  static constexpr float BOUNCE_HEIGHT = 34.0f;
+  static constexpr float X_SPEED = Config::BOING_X_SPEED;
+  static constexpr float BOUNCE_FREQ = Config::BOING_BOUNCE_FREQ;
+  static constexpr float BOUNCE_HEIGHT = Config::BOING_BOUNCE_HEIGHT;
 
   float xPos;
   int xDir;

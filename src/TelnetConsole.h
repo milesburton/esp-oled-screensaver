@@ -5,12 +5,10 @@
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 
-#include "BoingMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
-#include "StatusMode.h"
-#include "WeatherMode.h"
+#include "ModeHelper.h"
 
 class TelnetConsole {
  private:
@@ -20,6 +18,9 @@ class TelnetConsole {
   StatusMode* statusMode;
   BoingMode* boingMode;
   WeatherMode* weatherMode;
+
+  uint32_t lastActivityMs = 0;
+  static constexpr uint32_t IDLE_TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes
 
   void sendHelp() {
     client.println("Commands:");
@@ -80,10 +81,23 @@ class TelnetConsole {
         client.println("Type 'help' for commands");
         client.println();
 
+        lastActivityMs = millis();
         Logger::println("Telnet: client connected");
       } else {
         incoming.println("busy");
         incoming.stop();
+      }
+    }
+
+    // Idle timeout
+    if (client && client.connected()) {
+      if (millis() - lastActivityMs >= IDLE_TIMEOUT_MS) {
+        Logger::println("Telnet: idle timeout, disconnecting");
+        client.println("Idle timeout. Disconnecting.");
+        client.flush();
+        client.stop();
+        Logger::setTelnetClient(nullptr);
+        return;
       }
     }
 
@@ -93,6 +107,7 @@ class TelnetConsole {
       cmd.trim();
       cmd.toLowerCase();
 
+      lastActivityMs = millis();
       handleCommand(cmd);
     }
   }
@@ -117,7 +132,12 @@ class TelnetConsole {
 
     } else if (cmd.startsWith("xoff ")) {
       String v = cmd.substring(5);
-      Config::runtime.xOffset = v.toInt();
+      int val = v.toInt();
+      if (val < -20 || val > 20) {
+        client.println("error: xoff must be between -20 and 20");
+        return;
+      }
+      Config::runtime.xOffset = val;
       client.println("ok");
 
     } else if (cmd.startsWith("mode ")) {
@@ -126,13 +146,8 @@ class TelnetConsole {
         return;
       }
 
-      if (cmd.endsWith("status") && statusMode) {
-        displayManager->setMode(statusMode, 400);  // 2.5 FPS
-      } else if (cmd.endsWith("boing") && boingMode) {
-        displayManager->setMode(boingMode, 40);  // 25 FPS
-      } else if (cmd.endsWith("weather") && weatherMode) {
-        displayManager->setMode(weatherMode, 5000);  // Every 5 seconds
-      } else {
+      String modeName = cmd.substring(5);
+      if (!setModeByName(displayManager, modeName, statusMode, boingMode, weatherMode)) {
         client.println("unknown mode");
         return;
       }
