@@ -31,8 +31,8 @@ namespace Config {
   enum class OledDriver : uint8_t { SSD1306, SH1106 };
   
   struct RuntimeConfig {
-    OledDriver driver = OledDriver::SH1106;  // Default guess
-    int xOffset = 2;                          // SH1106 often needs +2
+    OledDriver driver = OledDriver::SSD1306;  // Standard configuration (fixes border)
+    int xOffset = 0;                           // SSD1306 standard: 0 (no offset needed)
     bool oledEnabled = true;
     
     const char* getDriverName() const {
