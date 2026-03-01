@@ -27,17 +27,38 @@ cp secrets.h.template secrets.h
 |---|---|---|---|
 | `esp8266_d1_mini` | Wemos D1 Mini | 4MB | Recommended |
 | `esp8266_nodmcu` | NodeMCU v2 | 4MB | Common |
-| `esp8266_generic` | Generic ESP8266 | 1MB | **Serial upload only** (OTA too large) |
+| `esp8266_generic` | Generic ESP8266 | 1MB | For 1MB flash boards |
+
+### Flash Size Compatibility
+
+Each board environment produces firmware with a specific flash size configuration embedded in the binary:
+
+- **4MB builds** (`d1_mini`, `nodmcu`): For boards with 4MB flash chips
+- **1MB builds** (`generic`): For boards with 1MB flash chips
+
+**Important**: You must use the correct binary for your hardware's flash size. If you see this error when uploading:
+
+```
+ERROR[9]: new Flash config wrong, real size: 1048576
+```
+
+Your device has 1MB flash - use the `esp8266_generic` binary instead of `d1_mini` or `nodmcu`.
 
 ### Generic ESP8266 1MB Flash Board
 
-The generic ESP8266 board with 1MB flash has **very limited space**. The firmware (354KB) and OTA library overhead may exceed available space, resulting in an upload error: `ERROR[9]: new Flash config wrong, real size: 1048576`.
+The generic ESP8266 board with 1MB flash has limited space but OTA updates work. Partition layout:
 
-**Solution:** Use serial upload instead of OTA:
+- Firmware: ~350KB
+- SPIFFS: 64KB
+- OTA: Supported (in-place update)
+
+**First-time upload**: Use serial connection:
 
 ```bash
 pio run -e esp8266_generic -t upload
 ```
+
+**Subsequent updates**: OTA works fine via `http://<device-ip>/update`
 
 ## Building Firmware
 

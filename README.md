@@ -50,6 +50,21 @@ I2C Address: 0x3C (configurable at compile time)
 
 ## Quick Start
 
+### Download Pre-built Firmware (Easiest)
+
+1. **Check your ESP8266 flash size**:
+   - Most NodeMCU and Wemos D1 Mini boards have **4MB** flash
+   - Some generic ESP8266 modules have **1MB** flash
+
+2. **Download the correct binary** from [Releases](https://github.com/milesburton/esp8266-oled-experiment/releases):
+   - `esp8266-oled-experiment_vX.X.X_esp8266_d1_mini.bin` - For Wemos D1 Mini (4MB)
+   - `esp8266-oled-experiment_vX.X.X_esp8266_nodmcu.bin` - For NodeMCU (4MB)
+   - `esp8266-oled-experiment_vX.X.X_esp8266_generic.bin` - For generic ESP8266 (1MB)
+
+3. **Flash via OTA** or use `esptool.py` for initial upload
+
+**Important**: If you see `ERROR[9]: new Flash config wrong, real size: 1048576` when uploading, your device has 1MB flash. Use the **generic** binary instead.
+
 ### With Development Container (Recommended)
 
 ```bash
