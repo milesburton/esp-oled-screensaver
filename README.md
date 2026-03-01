@@ -49,6 +49,45 @@ ESP8266-based modular platform firmware featuring extensible OLED display modes,
 
 **I2C Address**: 0x3C (configurable at compile time)
 
+## Development
+
+### Code Quality Tools
+
+This project uses automated code quality checks:
+
+- **Pre-commit hooks** - Auto-format and lint code before commits
+- **Conventional Commits** - Enforced commit message format
+- **C++ Linting** - clang-format and cpplint
+- **Unit Tests** - AUnit framework (tests in progress)
+
+### Development Setup
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Set up hooks
+pre-commit install
+pre-commit install --hook-type commit-msg
+
+# Run checks manually
+pre-commit run --all-files
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
+
+### Commit Message Format
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```bash
+feat(modes): add new clock display mode
+fix(display): correct alignment for SH1106
+docs(readme): update installation instructions
+```
+
+Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
 ## Setup
 
 ### 1. Install Dependencies

@@ -16,6 +16,17 @@ build/
 .clang_complete
 .gcc-flags.json
 
+# Test artifacts
+test_output/
+*.test
+
+# Python (pre-commit)
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # OS files
 .DS_Store
 Thumbs.db
