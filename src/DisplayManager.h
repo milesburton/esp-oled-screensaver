@@ -26,7 +26,7 @@ class DisplayManager {
         currentMode(nullptr),
         lastFrameMs(0),
         frameIntervalMs(40),  // Default: ~25 FPS
-        currentRotation(0) {}
+        currentRotation(0xFF) {}  // Initialize to invalid value to force first rotation apply
 
   void begin() {
     if (!Config::runtime.oledEnabled)
