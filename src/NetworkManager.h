@@ -63,6 +63,7 @@ class NetworkManager {
 
       html += "<li><b>OLED:</b> " + String(Config::runtime.oledEnabled ? "on" : "off") + "</li>";
       html += "<li><b>Driver:</b> " + String(Config::runtime.getDriverName()) + "</li>";
+      html += "<li><b>Rotation:</b> " + String(Config::runtime.getRotationName()) + "</li>";
       html += "<li><b>X offset:</b> " + String(Config::runtime.xOffset) + "</li>";
       html += "<li><b>I2C:</b> SDA=" + String(Config::OLED_SDA) +
               " SCL=" + String(Config::OLED_SCL) + " addr=0x" + String(Config::OLED_ADDR, HEX) +
@@ -81,12 +82,26 @@ class NetworkManager {
       html += "<h3>OLED Configuration</h3>";
       html += "<p>Try these until border + text align perfectly:</p>";
       html += "<ul>";
-      html += "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 (common)</a></li>";
+      html +=
+          "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 "
+          "(common)</a></li>";
       html += "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>";
-      html += "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 (common)</a></li>";
+      html +=
+          "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 "
+          "(common)</a></li>";
       html += "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
       html += "</ul>";
-      html += "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED OFF</a></p>";
+      html +=
+          "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED "
+          "OFF</a></p>";
+
+      html += "<h3>Display Rotation</h3>";
+      html += "<p>";
+      html += "<a href='/rotation?rot=0'>0°</a> | ";
+      html += "<a href='/rotation?rot=1'>90°</a> | ";
+      html += "<a href='/rotation?rot=2'>180°</a> | ";
+      html += "<a href='/rotation?rot=3'>270°</a>";
+      html += "</p>";
 
       html += "<p><i>Telnet console on port 23</i></p>";
 
@@ -176,6 +191,21 @@ class NetworkManager {
       }
 
       http.sendHeader("Location", "/mode?m=status");
+      http.send(302, "text/plain", "");
+    });
+
+    http.on("/rotation", HTTP_GET, [this]() {
+      if (http.hasArg("rot")) {
+        int rot = http.arg("rot").toInt();
+        if (rot >= 0 && rot <= 3) {
+          if (displayManager) {
+            displayManager->setRotation(static_cast<Config::DisplayRotation>(rot));
+          }
+          Logger::printf("Display: rotation set to %s", Config::runtime.getRotationName());
+        }
+      }
+
+      http.sendHeader("Location", "/");
       http.send(302, "text/plain", "");
     });
 

@@ -16,6 +16,7 @@ class DisplayManager {
   DisplayMode* currentMode;
   uint32_t lastFrameMs;
   uint32_t frameIntervalMs;
+  uint8_t currentRotation;  // Track current rotation for change detection
 
  public:
   DisplayManager()
@@ -24,8 +25,8 @@ class DisplayManager {
         u8g2(nullptr),
         currentMode(nullptr),
         lastFrameMs(0),
-        frameIntervalMs(40)  // Default: ~25 FPS
-  {}
+        frameIntervalMs(40),  // Default: ~25 FPS
+        currentRotation(0) {}
 
   void begin() {
     if (!Config::runtime.oledEnabled)
@@ -50,6 +51,21 @@ class DisplayManager {
 
     u8g2->setI2CAddress(Config::OLED_ADDR << 1);
     u8g2->begin();
+    applyRotation();
+  }
+
+  void applyRotation() {
+    if (!u8g2)
+      return;
+
+    uint8_t newRotation = Config::runtime.getU8G2Rotation();
+    if (currentRotation != newRotation) {
+      // Map DisplayRotation enum to U8G2 rotation callbacks
+      const u8g2_cb_t* rotation_cb[] = {U8G2_R0, U8G2_R1, U8G2_R2, U8G2_R3};
+      u8g2->setDisplayRotation(rotation_cb[newRotation]);
+      currentRotation = newRotation;
+      Logger::printf("Display: rotation set to %s", Config::runtime.getRotationName());
+    }
   }
 
   void setMode(DisplayMode* mode, uint32_t frameIntervalMs = 40) {
@@ -71,6 +87,9 @@ class DisplayManager {
     if (!Config::runtime.oledEnabled || !u8g2 || !currentMode)
       return;
 
+    // Check for rotation changes
+    applyRotation();
+
     uint32_t now = millis();
     if (now - lastFrameMs >= frameIntervalMs) {
       uint32_t deltaMs = (lastFrameMs == 0) ? 16 : (now - lastFrameMs);
@@ -89,6 +108,13 @@ class DisplayManager {
 
   U8G2* getDisplay() { return u8g2; }
   DisplayMode* getCurrentMode() { return currentMode; }
+
+  void setRotation(Config::DisplayRotation rot) {
+    Config::runtime.rotation = rot;
+    applyRotation();
+  }
+
+  Config::DisplayRotation getRotation() const { return Config::runtime.rotation; }
 
   // Drawing helpers with X offset
   static void drawPixel(U8G2* u8g2, int x, int y) {

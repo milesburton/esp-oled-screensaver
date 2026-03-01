@@ -48,7 +48,7 @@ jobs:
           mkdir -p release
           ENV_NAME=${{ matrix.environment }}
           VERSION=${{ steps.version.outputs.version }}
-          FIRMWARE_NAME="esp8266-weather-clock_v${VERSION}_${ENV_NAME}.bin"
+          FIRMWARE_NAME="esp8266-oled-experiment_v${VERSION}_${ENV_NAME}.bin"
 
           cp .pio/build/${{ matrix.environment }}/firmware.bin "release/${FIRMWARE_NAME}"
 
@@ -96,7 +96,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release v${{ steps.version.outputs.version }} - ${{ github.ref_name }}
           body: |
-            ## ESP8266 Weather Clock Firmware Release
+            ## ESP8266-OLED-Experiment Firmware Release
 
             **Version**: v${{ steps.version.outputs.version }}
             **Date**: ${{ github.event.repository.updated_at }}
@@ -129,7 +129,7 @@ jobs:
             ### Verification
             Each binary has a corresponding `.sha256` checksum file for verification:
             ```bash
-            sha256sum -c esp8266-weather-clock_v${{ steps.version.outputs.version }}_esp8266_d1_mini.bin.sha256
+            sha256sum -c esp8266-oled-experiment_v${{ steps.version.outputs.version }}_esp8266_d1_mini.bin.sha256
             ```
           files: release_files/*
           draft: false

@@ -173,7 +173,7 @@ jobs:
           mkdir -p release
           VERSION="${{ needs.create-release.outputs.new_version }}"
           ENV="${{ matrix.environment }}"
-          FIRMWARE_NAME="esp8266-weather-clock_v${VERSION}_${ENV}.bin"
+          FIRMWARE_NAME="esp8266-oled-experiment_v${VERSION}_${ENV}.bin"
 
           cp .pio/build/${ENV}/firmware.bin "release/${FIRMWARE_NAME}"
 
@@ -235,7 +235,7 @@ jobs:
           tag_name: v${{ needs.create-release.outputs.new_version }}
           name: Release v${{ needs.create-release.outputs.new_version }}
           body: |
-            ## ESP8266 Weather Clock v${{ needs.create-release.outputs.new_version }}
+            ## ESP8266-OLED-Experiment v${{ needs.create-release.outputs.new_version }}
 
             **Release Date**: ${{ github.event.repository.updated_at }}
             **Commit**: ${{ github.sha }}
@@ -244,9 +244,9 @@ jobs:
             ${{ steps.changelog.outputs.changelog }}
 
             ### Supported Boards
-            - Wemos D1 Mini (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin`)
-            - NodeMCU v2 (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_nodmcu.bin`)
-            - Generic ESP8266 (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_generic.bin`)
+            - Wemos D1 Mini (`esp8266-oled-experiment_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin`)
+            - NodeMCU v2 (`esp8266-oled-experiment_v${{ needs.create-release.outputs.new_version }}_esp8266_nodmcu.bin`)
+            - Generic ESP8266 (`esp8266-oled-experiment_v${{ needs.create-release.outputs.new_version }}_esp8266_generic.bin`)
 
             ### Installation
 
@@ -264,7 +264,7 @@ jobs:
 
             ### Verification
             ```bash
-            sha256sum -c esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin.sha256
+            sha256sum -c esp8266-oled-experiment_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin.sha256
             ```
           files: release_files/*
           draft: false

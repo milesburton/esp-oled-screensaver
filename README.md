@@ -1,4 +1,4 @@
-# ESP8266 Weather Clock - OLED Display with WiFi
+# ESP8266-OLED-Experiment
 
 Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes, WiFi connectivity, OTA updates, and remote debugging via Telnet.
 
@@ -38,6 +38,7 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 - 128x64 OLED display (SSD1306 or SH1106)
 
 **Wiring**
+
 | OLED Pin | ESP8266 Pin |
 |----------|-------------|
 | SDA      | GPIO0       |
