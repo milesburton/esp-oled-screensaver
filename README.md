@@ -200,6 +200,11 @@ pio test --without-uploading
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## CI/CD Trigger Policy
+
+- Pushes to `main` run quality checks (linting, native tests, embedded build verification)
+- Releases are created from tags (`v*` / `release-*`) or manual deployment workflow dispatch
+
 ## Configuration
 
 Edit compile-time constants in `src/Config.h`:
