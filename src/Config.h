@@ -40,14 +40,30 @@ static constexpr float BOING_BOUNCE_HEIGHT = 34.0f; // Max bounce height in pixe
 
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
+enum class DisplayRotation : uint8_t { None = 0, _90CW = 1, _180 = 2, _90CCW = 3 };
 
 struct RuntimeConfig {
   OledDriver driver = OledDriver::SSD1306;  // Standard configuration (fixes border)
   int xOffset = 0;                          // SSD1306 standard: 0 (no offset needed)
   bool oledEnabled = true;
+  DisplayRotation rotation = DisplayRotation::None;
 
   const char* getDriverName() const {
     return (driver == OledDriver::SSD1306) ? "SSD1306" : "SH1106";
+  }
+
+  uint8_t getU8G2Rotation() const {
+    return static_cast<uint8_t>(rotation);
+  }
+
+  const char* getRotationName() const {
+    switch (rotation) {
+      case DisplayRotation::None: return "0°";
+      case DisplayRotation::_90CW: return "90° CW";
+      case DisplayRotation::_180: return "180°";
+      case DisplayRotation::_90CCW: return "90° CCW";
+      default: return "unknown";
+    }
   }
 };
 
