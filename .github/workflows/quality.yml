@@ -84,3 +84,47 @@ jobs:
         run: |
           find . -name "*.ino" -o -name "*.cpp" -o -name "*.h" | \
           xargs clang-format --dry-run --Werror
+
+  build:
+    name: Build Firmware
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [esp8266_d1_mini, esp8266_nodmcu, esp8266_generic]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+      
+      - name: Install PlatformIO
+        run: |
+          pip install platformio
+      
+      - name: Build firmware for ${{ matrix.environment }}
+        run: |
+          pio run -e ${{ matrix.environment }}
+      
+      - name: Create firmware artifact
+        run: |
+          mkdir -p firmware_artifacts
+          VERSION=$(grep 'FW_VERSION' Config.h | grep -oP '"platform-\K[^"]+')
+          cp .pio/build/${{ matrix.environment }}/firmware.bin \
+             firmware_artifacts/esp8266-weather-clock_${VERSION}_${{ matrix.environment }}.bin
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.environment }}
+          path: firmware_artifacts/
+          retention-days: 30

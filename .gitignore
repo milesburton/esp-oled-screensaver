@@ -3,6 +3,7 @@ secrets.h
 
 # Build artifacts
 build/
+firmware/
 *.hex
 *.bin
 *.elf

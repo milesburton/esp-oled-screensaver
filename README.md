@@ -56,9 +56,35 @@ ESP8266-based modular platform firmware featuring extensible OLED display modes,
 This project uses automated code quality checks:
 
 - **Pre-commit hooks** - Auto-format and lint code before commits
+- **CI/CD Pipeline** - Automated tests and builds on every push
 - **Conventional Commits** - Enforced commit message format
 - **C++ Linting** - clang-format and cpplint
 - **Unit Tests** - AUnit framework (tests in progress)
+
+### Building & Deployment
+
+#### Build Tools
+
+- **PlatformIO** - Primary build tool
+- **Support for multiple boards**:
+  - Wemos D1 Mini (4MB) - ✅ Recommended
+  - NodeMCU v2 (4MB)
+  - Generic ESP8266 (1MB)
+
+#### Quick Build
+
+```bash
+# Install PlatformIO
+pip install platformio
+
+# Build firmware
+./build.sh esp8266_d1_mini
+
+# Upload via OTA
+http://<device-ip>/update
+```
+
+See [BUILDING.md](BUILDING.md) for complete build and deployment guide.
 
 ### Development Setup
 
