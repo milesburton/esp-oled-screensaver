@@ -51,6 +51,19 @@ ESP8266-based modular platform firmware featuring extensible OLED display modes,
 
 ## Development
 
+### Quick Start with Development Container
+
+This project includes a **Development Container** for a consistent, zero-configuration development environment.
+
+**Prerequisites**: Docker and VS Code with Remote Containers extension
+
+**Steps**:
+1. Open folder in VS Code
+2. Click **"Reopen in Container"** when prompted
+3. Done! All tools are ready
+
+[📖 Full devcontainer guide →](.devcontainer/README.md)
+
 ### Code Quality Tools
 
 This project uses automated code quality checks:

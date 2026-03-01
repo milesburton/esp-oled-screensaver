@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  platformio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: esp8266-weather-clock
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - platformio_cache:/.platformio
+    ports:
+      - "80:80"
+      - "23:23"
+    environment:
+      - PLATFORMIO_GLOBALLIB_DIR=/.platformio/lib
+      - PLATFORMIO_PLATFORMS_DIR=/.platformio/platforms
+      - PLATFORMIO_PACKAGES_DIR=/.platformio/packages
+    command: /bin/bash
+
+volumes:
+  platformio_cache:

@@ -2,6 +2,29 @@
 
 This guide covers building firmware binaries and deploying them to your ESP8266 device via OTA updates.
 
+## Quick Start with Development Container
+
+**Recommended for new developers** - Get started in minutes with zero manual installation.
+
+Prerequisites: Docker and VS Code with Remote Containers extension
+
+```bash
+# 1. Open in VS Code
+code .
+
+# 2. Click "Reopen in Container"
+# 3. All tools are ready!
+
+./build.sh                    # Build firmware
+pio test --without-uploading  # Run tests
+```
+
+See [.devcontainer/README.md](.devcontainer/README.md) for complete devcontainer guide.
+
+## Manual Local Setup
+
+If you prefer local installation without containers, follow the steps below.
+
 ## Build Environments
 
 The project supports multiple ESP8266 boards via environment configurations in `platformio.ini`:

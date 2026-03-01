@@ -1,0 +1,73 @@
+{
+  "name": "ESP8266 Weather Clock",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "remoteUser": "vscode",
+  
+  "features": {},
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "platformio.platformio-ide",
+        "clangd.clangd",
+        "xaver.clang-format",
+        "DavidAnson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python3",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.formatting.provider": "black",
+        "[cpp]": {
+          "editor.defaultFormatter": "xaver.clang-format",
+          "editor.formatOnSave": true,
+          "editor.rulers": [100]
+        },
+        "[h]": {
+          "editor.defaultFormatter": "xaver.clang-format",
+          "editor.formatOnSave": true,
+          "editor.rulers": [100]
+        },
+        "[markdown]": {
+          "editor.formatOnSave": true
+        },
+        "C_Cpp.default.intelliSenseEngine": "Tag Parser",
+        "C_Cpp.intelliSenseEngineMaxCacheSize": 16,
+        "clang-format.style": "google",
+        "clang-format.fallbackStyle": "Google",
+        "files.exclude": {
+          "**/.pio": true,
+          "**/build": true,
+          "**/.git": true
+        }
+      }
+    }
+  },
+  
+  "postCreateCommand": "pre-commit install && platformio update && pip3 install -q -e . 2>/dev/null || true",
+  
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin"
+  },
+  
+  "mounts": [],
+  
+  "forwardPorts": [80, 23],
+  "portsAttributes": {
+    "80": {
+      "label": "HTTP Server",
+      "onAutoForward": "notify"
+    },
+    "23": {
+      "label": "Telnet Console",
+      "onAutoForward": "notify"
+    }
+  }
+}

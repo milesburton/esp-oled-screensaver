@@ -4,13 +4,29 @@ Thank you for your interest in contributing! This document outlines the developm
 
 ## Development Setup
 
-### Prerequisites
+### Quick Start: Development Container (Recommended)
+
+The easiest way to get started is with our development container:
+
+1. **Install prerequisites**:
+   - Docker ([Install](https://www.docker.com/products/docker-desktop))
+   - VS Code with Remote Containers extension
+
+2. **Open in container**:
+   - Clone the repository
+   - Open in VS Code
+   - Click **"Reopen in Container"** when prompted
+   - Done! All tools are pre-configured
+
+[See .devcontainer/README.md for details](.devcontainer/README.md)
+
+### Prerequisites (Local Installation)
 
 - Arduino IDE or PlatformIO
 - Python 3.7+ (for pre-commit hooks)
 - Git
 
-### Initial Setup
+### Initial Setup (Local Installation)
 
 1. **Clone the repository**
    ```bash
