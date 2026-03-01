@@ -74,6 +74,8 @@ I2C Address: 0x3C (configurable at compile time)
 
 **Device won't connect?** See [RECOVERY.md](RECOVERY.md) for troubleshooting and recovery options.
 
+**Lost network access and need serial flash?** Check [RECOVERY.md - Recovery Script](RECOVERY.md#automated-recovery-script-easiest) for automated flashing.
+
 ### With Development Container (Recommended)
 
 ```bash

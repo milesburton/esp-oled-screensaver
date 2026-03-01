@@ -1,5 +1,16 @@
 # Device Recovery Guide
 
+**TL;DR - Quick Recovery Steps**
+
+| Situation | Action |
+|-----------|--------|
+| **New device** | Connect to `esp-oled-setup` AP (pwd: `setup1234`), go to `http://192.168.4.1/` |
+| **Lost WiFi** | Same as above OR reflash with `./build.sh esp8266_d1_mini` |
+| **No AP visible** | Use serial programmer (see Option 3) |
+| **Stuck in bootloop** | Erase flash with esptool: `esptool.py -p /dev/ttyUSB0 erase_flash` |
+
+---
+
 ## Device Won't Connect to WiFi
 
 If your device appears offline and you can't access the web interface, follow these recovery steps.
@@ -63,16 +74,173 @@ If AP mode doesn't work or you need to flash again:
    pio run -e esp8266_d1_mini -t upload
    ```
 
-### Option 3: Recover with esptool
+### Option 3: Serial Programmer Flash (When AP Mode Unavailable)
 
-For direct control over the flashing process:
+If you cannot access AP mode (e.g., device flashed with broken firmware), use a serial programmer for direct flash access.
+
+#### Automated Recovery Script (Easiest)
+
+We provide an automated recovery script that handles everything:
 
 ```bash
-# Erase entire flash
-esptool.py -p /dev/ttyUSB0 erase_flash
+# Clone repository
+git clone https://github.com/milesburton/esp8266-oled-experiment.git
+cd esp8266-oled-experiment
 
-# Flash with pre-built binary or custom build
-esptool.py -p /dev/ttyUSB0 write_flash 0x00000 .pio/build/esp8266_d1_mini/firmware.bin
+# Run recovery script
+./recovery.sh [port] [board]
+
+# Examples:
+./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
+./recovery.sh COM3 esp8266_generic
+```
+
+The script will:
+
+1. Verify esptool is installed
+2. Check serial port availability
+3. Prompt you to configure WiFi credentials (if not already done)
+4. Build firmware for your board
+5. Guide you through bootloader mode
+6. Flash the firmware
+7. Provide next steps
+
+**If script has issues**, follow the manual steps below.
+
+#### Manual Flash Instructions
+
+1. **USB-to-Serial Programmer**:
+   - CH340, CP2102, or FTDI-based
+   - 3.3V logic (NOT 5V)
+
+2. **Install esptool**:
+
+   ```bash
+   pip install esptool
+   ```
+
+3. **Identify the serial port**:
+
+   ```bash
+   # List available serial ports
+   esptool.py version  # This will show your port in the output
+
+   # Or use system commands:
+   # Linux: ls /dev/ttyUSB* or /dev/ttyACM*
+   # macOS: ls /dev/tty.* | grep -E "SLAB|CH34"
+   # Windows: Check Device Manager for COM ports
+   ```
+
+#### Wiring Connections
+
+| Programmer Pin | ESP8266 Pin | Purpose |
+|---|---|---|
+| GND | GND | Ground |
+| VCC/3.3V | 3.3V | Power |
+| TX | RX (GPIO3) | Serial TX |
+| RX | TX (GPIO1) | Serial RX |
+| - | GPIO0 | **Hold to GND during boot to enter flash mode** |
+| - | GPIO2 | Can leave floating |
+
+#### Step-by-Step Flash Instructions
+
+1. **Clone repository and setup**:
+
+   ```bash
+   git clone https://github.com/milesburton/esp8266-oled-experiment.git
+   cd esp8266-oled-experiment
+   ```
+
+2. **Configure WiFi credentials**:
+
+   ```bash
+   cp secrets.h.template src/secrets.h
+   # Edit with your actual credentials
+   nano src/secrets.h
+   # Change:
+   #   WIFI_SSID = "your-wifi-name"
+   #   WIFI_PASS = "your-wifi-password"
+   ```
+
+3. **Build firmware**:
+
+   ```bash
+   # For Wemos D1 Mini or NodeMCU (4MB)
+   ./build.sh esp8266_d1_mini
+
+   # OR for Generic ESP8266 (1MB)
+   ./build.sh esp8266_generic
+   ```
+
+4. **Enter Flash Mode**:
+   - Hold GPIO0 to GND
+   - Press RST (or cycle power)
+   - Release GPIO0
+   - Device should be in bootloader mode
+
+5. **Flash the firmware**:
+
+   ```bash
+   # Replace /dev/ttyUSB0 with your serial port
+   esptool.py -p /dev/ttyUSB0 -b 921600 \
+     write_flash --flash_mode dout --flash_freq 40m --flash_size detect \
+     0x0 .pio/build/esp8266_d1_mini/firmware.bin
+
+   # For Windows (use COM port instead):
+   esptool.py -p COM3 -b 921600 ^
+     write_flash --flash_mode dout --flash_freq 40m --flash_size detect ^
+     0x0 .pio\build\esp8266_d1_mini\firmware.bin
+   ```
+
+6. **Verify flash success**:
+
+   ```bash
+   # You should see:
+   # Wrote 358608 bytes at address 0x00000000 in X.X seconds
+   # Hash of data verified.
+   ```
+
+7. **Reset device**:
+   - Press RST button or cycle power
+   - Device will boot with new firmware
+   - Should start AP mode: `esp-oled-setup`
+
+#### Complete Flash Erase (if needed)
+
+If you need to erase everything first:
+
+```bash
+esptool.py -p /dev/ttyUSB0 erase_flash
+# Then proceed with write_flash command above
+```
+
+#### Troubleshooting Serial Flash
+
+**"Device not found" error**:
+
+- Check USB cable is connected
+- Verify correct COM port (use `esptool.py version`)
+- Try different USB port on your computer
+- Check programmer is 3.3V not 5V
+
+**"Failed to enter ROM bootloader"**:
+
+- Make sure GPIO0 is held to GND during boot
+- Try holding GPIO0 longer (full 2+ seconds)
+- Check EN/RST button press timing
+
+**"Hash of data verified" but device won't boot**:
+
+- Try pressing RST button
+- Check power supply voltage (must be 3.3V stable)
+- Device may need 5-10 seconds to boot
+
+**Serial port permission denied (Linux)**:
+
+```bash
+sudo usermod -a -G dialout $USER
+# Then logout and login, or:
+sudo chmod 666 /dev/ttyUSB0
 ```
 
 ## Serial Connection Details
