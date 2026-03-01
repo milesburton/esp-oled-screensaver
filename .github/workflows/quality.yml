@@ -56,13 +56,7 @@ jobs:
       - name: Build tests (verify compilation)
         run: |
           echo "Building test firmware..."
-          # Build tests using filter to build one at a time
-          # Use serial protocol to avoid OTA upload_port requirement
-          for test in test_Config test_DisplayModes test_Logger; do
-            echo "Building ${test}..."
-            PLATFORMIO_TEST_FILTER="${test}" pio test --without-testing --without-uploading --upload-protocol=esptool || exit 1
-          done
-          
+          pio test --without-testing --without-uploading
           echo "✓ All tests compiled successfully!"
   
   conventional-commits:
