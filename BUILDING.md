@@ -127,7 +127,12 @@ pio run -e esp8266_d1_mini -v
 
 ## GitHub Actions CI/CD
 
-Every push builds for all boards and runs tests. Access artifacts from Actions tab.
+Pushes to `main` run the quality pipeline (linting, native tests, and embedded build verification).
+
+Releases are tag-driven:
+
+- Push tag `v*` or `release-*` to run release build/publish workflow
+- Or run `Continuous Deployment` manually via `workflow_dispatch`
 
 For releases, create a git tag:
 
