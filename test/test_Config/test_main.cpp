@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cstring>
 #include <AUnit.h>
 
 #include "../../src/Config.h"
@@ -44,23 +45,23 @@ test(ConfigTest, RuntimeConfigDefaultOledEnabled) {
 test(ConfigTest, GetDriverNameSSD1306) {
   Config::RuntimeConfig config;
   config.driver = Config::OledDriver::SSD1306;
-  assertStringEqual("SSD1306", config.getDriverName());
+  assertEqual(strcmp("SSD1306", config.getDriverName()), 0);
 }
 
 test(ConfigTest, GetDriverNameSH1106) {
   Config::RuntimeConfig config;
   config.driver = Config::OledDriver::SH1106;
-  assertStringEqual("SH1106", config.getDriverName());
+  assertEqual(strcmp("SH1106", config.getDriverName()), 0);
 }
 
 // Test driver switching
 test(ConfigTest, DriverSwitching) {
   Config::RuntimeConfig config;
   config.driver = Config::OledDriver::SSD1306;
-  assertStringEqual("SSD1306", config.getDriverName());
+  assertEqual(strcmp("SSD1306", config.getDriverName()), 0);
 
   config.driver = Config::OledDriver::SH1106;
-  assertStringEqual("SH1106", config.getDriverName());
+  assertEqual(strcmp("SH1106", config.getDriverName()), 0);
 }
 
 // Test X offset configuration

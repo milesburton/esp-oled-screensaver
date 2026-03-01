@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cstring>
 #include <AUnit.h>
 
 #include "../../src/BoingMode.h"
@@ -9,7 +10,7 @@
 // Test StatusMode
 test(StatusModeTest, GetName) {
   StatusMode mode;
-  assertStringEqual("status", mode.getName());
+  assertEqual(strcmp("status", mode.getName()), 0);
 }
 
 test(StatusModeTest, NameIsNotNull) {
@@ -20,7 +21,7 @@ test(StatusModeTest, NameIsNotNull) {
 // Test BoingMode
 test(BoingModeTest, GetName) {
   BoingMode mode;
-  assertStringEqual("boing", mode.getName());
+  assertEqual(strcmp("boing", mode.getName()), 0);
 }
 
 test(BoingModeTest, NameIsNotNull) {
@@ -31,7 +32,7 @@ test(BoingModeTest, NameIsNotNull) {
 // Test WeatherMode
 test(WeatherModeTest, GetName) {
   WeatherMode mode;
-  assertStringEqual("weather", mode.getName());
+  assertEqual(strcmp("weather", mode.getName()), 0);
 }
 
 test(WeatherModeTest, NameIsNotNull) {
@@ -46,9 +47,9 @@ test(DisplayModeTest, NamesAreLowercase) {
   WeatherMode weather;
 
   // All mode names should be lowercase for consistency
-  assertStringEqual("status", status.getName());
-  assertStringEqual("boing", boing.getName());
-  assertStringEqual("weather", weather.getName());
+  assertEqual(strcmp("status", status.getName()), 0);
+  assertEqual(strcmp("boing", boing.getName()), 0);
+  assertEqual(strcmp("weather", weather.getName()), 0);
 }
 
 test(DisplayModeTest, NamesAreUnique) {
