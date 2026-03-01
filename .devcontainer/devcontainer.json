@@ -1,16 +1,8 @@
 {
-  "name": "ESP8266-OLED-Experiment",
+  "name": "ESP8266 Weather Clock",
   "dockerFile": "Dockerfile",
-  "context": "..",
+  "context": ".",
   "remoteUser": "vscode",
-
-  // USB device access for serial programmers (esptool, recovery.sh)
-  // Required for flashing ESP8266 devices
-  // See RECOVERY.md for more information
-  "runArgs": [
-    "--privileged",
-    "-v", "/dev:/dev"
-  ],
 
   "features": {},
 
@@ -73,12 +65,6 @@
           "**/.pio": true,
           "**/build": true,
           "**/.git": true
-        },
-        "terminal.integrated.defaultProfile.linux": "fish",
-        "terminal.integrated.profiles.linux": {
-          "fish": {
-            "path": "/usr/bin/fish"
-          }
         }
       }
     }

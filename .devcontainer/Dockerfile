@@ -6,10 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install tools and GitHub CLI in a single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     clang-format \
-    curl \
-    fish \
     git \
-    lolcat \
+    curl \
     openssh-client \
     sudo \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -33,13 +31,9 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN groupadd --gid $USER_GID $USERNAME && \
-    useradd --uid $USER_UID --gid $USER_GID -m -s /usr/bin/fish $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME && \
     echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
     chmod 0440 /etc/sudoers.d/$USERNAME
-
-RUN mkdir -p /home/$USERNAME/.config/fish
-COPY config.fish /home/$USERNAME/.config/fish/config.fish
-RUN chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
 
 USER $USERNAME
 

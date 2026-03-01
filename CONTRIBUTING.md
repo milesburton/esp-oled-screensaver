@@ -14,8 +14,8 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 **Local Installation**:
 
 ```bash
-git clone https://github.com/milesburton/esp8266-oled-experiment.git
-cd esp8266-oled-experiment
+git clone https://github.com/milesburton/esp8266-weather-clock.git
+cd esp8266-weather-clock
 cp secrets.h.template secrets.h
 
 pip install pre-commit
@@ -74,7 +74,7 @@ public:
 };
 ```
 
-2. Register in `src/ESP8266-OLED-Experiment.ino`:
+2. Register in `src/OA_OLED_Display_with_wifi_working.ino`:
 
 ```cpp
 #include "MyMode.h"

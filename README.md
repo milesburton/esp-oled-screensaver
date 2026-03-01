@@ -1,4 +1,4 @@
-# ESP8266-OLED-Experiment
+# ESP8266 Weather Clock - OLED Display with WiFi
 
 Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes, WiFi connectivity, OTA updates, and remote debugging via Telnet.
 
@@ -38,7 +38,6 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 - 128x64 OLED display (SSD1306 or SH1106)
 
 **Wiring**
-
 | OLED Pin | ESP8266 Pin |
 |----------|-------------|
 | SDA      | GPIO0       |
@@ -50,32 +49,6 @@ I2C Address: 0x3C (configurable at compile time)
 
 ## Quick Start
 
-### Download Pre-built Firmware (Easiest)
-
-1. **Check your ESP8266 flash size**:
-   - Most NodeMCU and Wemos D1 Mini boards have **4MB** flash
-   - Some generic ESP8266 modules have **1MB** flash
-
-2. **Download the correct binary** from [Releases](https://github.com/milesburton/esp8266-oled-experiment/releases):
-   - `esp8266-oled-experiment_vX.X.X_esp8266_d1_mini.bin` - For Wemos D1 Mini (4MB)
-   - `esp8266-oled-experiment_vX.X.X_esp8266_nodmcu.bin` - For NodeMCU (4MB)
-   - `esp8266-oled-experiment_vX.X.X_esp8266_generic.bin` - For generic ESP8266 (1MB)
-
-3. **Flash via OTA** or use `esptool.py` for initial upload
-
-4. **First Boot - Setup Mode**:
-   After flashing, the device starts in **AP (Access Point) setup mode** by default:
-   - Look for WiFi network: `esp-oled-setup` (password: `setup1234`)
-   - Open your browser to: `http://192.168.4.1/`
-   - Configure your WiFi credentials
-   - Device will reboot and connect to your network
-
-**Important**: If you see `ERROR[9]: new Flash config wrong, real size: 1048576` when uploading, your device has 1MB flash. Use the **generic** binary instead.
-
-**Device won't connect?** See [RECOVERY.md](RECOVERY.md) for troubleshooting and recovery options.
-
-**Lost network access and need serial flash?** Check [RECOVERY.md - Recovery Script](RECOVERY.md#automated-recovery-script-easiest) for automated flashing.
-
 ### With Development Container (Recommended)
 
 ```bash
@@ -83,12 +56,7 @@ I2C Address: 0x3C (configurable at compile time)
 code .
 # Click "Reopen in Container"
 ./build.sh esp8266_d1_mini
-
-# Also supports serial programmer flashing (e.g., recovery.sh)
-./recovery.sh /dev/ttyUSB0 esp8266_d1_mini
 ```
-
-The container automatically provides USB device access for flashing with serial programmers.
 
 See [.devcontainer/README.md](.devcontainer/README.md) for full details.
 
@@ -161,7 +129,7 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 
 ```
 src/
-├── ESP8266-OLED-Experiment.ino            # Main sketch (~60 lines)
+├── OA_OLED_Display_with_wifi_working.ino  # Main sketch (~60 lines)
 ├── Config.h / Config.cpp                  # Configuration & constants
 ├── Logger.h                               # Unified logging
 ├── DisplayManager.h                       # OLED management
