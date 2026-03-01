@@ -18,9 +18,12 @@ class NetworkManager {
   BoingMode* boingMode;
   WeatherMode* weatherMode;
 
+  bool apMode = false;
   uint32_t wifiRetryMs = 0;
   uint32_t wifiRetryIntervalMs = 5000;
   static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;
+  static constexpr const char* AP_SSID = "esp-oled-setup";
+  static constexpr const char* AP_PASS = "setup1234";
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -237,13 +240,20 @@ class NetworkManager {
 
   void begin() {
     WiFi.persistent(false);
-    WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
-    WiFi.hostname(Config::HOSTNAME);
-    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
 
-    Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    if (strlen(Config::WIFI_SSID) == 0) {
+      apMode = true;
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP(AP_SSID, AP_PASS);
+      Logger::printf("WiFi: AP mode — SSID='%s' ip=192.168.4.1", AP_SSID);
+    } else {
+      WiFi.mode(WIFI_STA);
+      WiFi.setAutoReconnect(true);
+      WiFi.hostname(Config::HOSTNAME);
+      WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+      Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    }
 
     setupRoutes();
     ElegantOTA.begin(&http, Config::OTA_USER, Config::OTA_PASS);
@@ -256,6 +266,9 @@ class NetworkManager {
   void update() {
     http.handleClient();
     ElegantOTA.loop();
+
+    if (apMode)
+      return;
 
     wl_status_t status = WiFi.status();
     if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED) {
@@ -273,6 +286,10 @@ class NetworkManager {
   }
 
   void logStatus() {
+    if (apMode) {
+      Logger::printf("WiFi: AP mode ip=192.168.4.1 heap=%u", ESP.getFreeHeap());
+      return;
+    }
     Logger::printf("WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
                    (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str() : "(unset)",
                    (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
