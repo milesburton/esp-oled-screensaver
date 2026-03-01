@@ -102,11 +102,13 @@ esptool.py --port /dev/ttyUSB0 write_flash -fm dout -fs 4MB -ff 40m 0x0 firmware
 ## Debugging
 
 **Serial Monitor**:
+
 ```bash
 pio run -e esp8266_d1_mini -t upload && pio device monitor
 ```
 
 **Telnet Console** (if device is on network):
+
 ```bash
 telnet <device-ip> 23
 help
@@ -114,6 +116,7 @@ status
 ```
 
 **Build Troubleshooting**:
+
 ```bash
 # Check environment
 pio run -e esp8266_d1_mini --target envdump
@@ -127,6 +130,7 @@ pio run -e esp8266_d1_mini -v
 Every push builds for all boards and runs tests. Access artifacts from Actions tab.
 
 For releases, create a git tag:
+
 ```bash
 git tag v1.0.0
 git push origin v1.0.0

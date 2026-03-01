@@ -34,13 +34,13 @@ repos:
         types_or: [c++, c]
         files: '\.(ino|cpp|h)$'
 
-  # C++ Linting with cpplint
+  # C++ Linting with cpplint (tuned for embedded/Arduino style)
   - repo: https://github.com/cpplint/cpplint
     rev: 1.6.1
     hooks:
       - id: cpplint
         args:
-          - '--filter=-build/include_subdir,-build/namespaces,-runtime/references,-readability/todo'
+          - '--filter=-build/include_subdir,-build/namespaces,-runtime/references,-readability/todo,-legal/copyright,-readability/casting,-whitespace/semicolon,-build/include_order,-build/include_what_you_use'
           - '--linelength=120'
         files: '\.(ino|cpp|h)$'
 

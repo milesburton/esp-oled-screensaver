@@ -16,16 +16,16 @@ jobs:
         environment: [esp8266_d1_mini, esp8266_nodmcu, esp8266_generic]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up secrets for build
         run: |
           cp src/secrets.h.ci src/secrets.h
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Cache PlatformIO
         uses: actions/cache@v3
         with:
@@ -33,34 +33,34 @@ jobs:
             ~/.platformio
             .pio
           key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
-      
+
       - name: Install PlatformIO
         run: pip install platformio
-      
+
       - name: Build firmware for ${{ matrix.environment }}
         run: pio run -e ${{ matrix.environment }}
-      
+
       - name: Extract version
         id: version
         run: |
           VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-      
+
       - name: Create firmware package
         run: |
           mkdir -p release
           ENV_NAME=${{ matrix.environment }}
           VERSION=${{ steps.version.outputs.version }}
           FIRMWARE_NAME="esp8266-weather-clock_v${VERSION}_${ENV_NAME}.bin"
-          
+
           cp .pio/build/${{ matrix.environment }}/firmware.bin "release/${FIRMWARE_NAME}"
-          
+
           # Create checksum
           cd release
           sha256sum "${FIRMWARE_NAME}" > "${FIRMWARE_NAME}.sha256"
           cd ..
-      
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -76,24 +76,24 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      
+
       - name: Extract version
         id: version
         run: |
           VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
+
       - name: Prepare release files
         run: |
           mkdir -p release_files
           find artifacts -name "*.bin" -o -name "*.sha256" | xargs cp -t release_files/ --no-clobber
           ls -la release_files/
-      
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -101,35 +101,35 @@ jobs:
           name: Release v${{ steps.version.outputs.version }} - ${{ github.ref_name }}
           body: |
             ## ESP8266 Weather Clock Firmware Release
-            
+
             **Version**: v${{ steps.version.outputs.version }}
             **Date**: ${{ github.event.head_commit.timestamp }}
             **Commit**: ${{ github.sha }}
-            
+
             ### Supported Boards
             - Wemos D1 Mini (esp8266_d1_mini)
             - NodeMCU v2 (esp8266_nodmcu)
             - Generic ESP8266 (esp8266_generic)
-            
+
             ### Installation
-            
+
             **Via OTA (Recommended)**:
             1. Navigate to `http://<device-ip>/update`
             2. Select the appropriate `.bin` file for your board
             3. Upload and wait for reboot
-            
+
             **Via Arduino IDE**:
             1. Sketch → Export compiled Binary
             2. Use the `.bin` file from this release
-            
+
             **Via PlatformIO**:
             ```bash
             pio run -e esp8266_d1_mini -t upload
             ```
-            
+
             ### Changes
             See commit history for detailed changes.
-            
+
             ### Verification
             Each binary has a corresponding `.sha256` checksum file for verification:
             ```bash

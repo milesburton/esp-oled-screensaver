@@ -24,15 +24,14 @@ class BoingMode : public DisplayMode {
   float rotPhase;
   uint32_t startTime;
 
-  static inline float clampf(float v, float a, float b) {
-    return v < a ? a : (v > b ? b : v);
-  }
+  static inline float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b : v); }
 
   void drawShadow(U8G2* u8g2, int cx, int cy, int rx, int ry) {
     for (int y = -ry; y <= ry; y++) {
       float yy = (float)y / (float)ry;
       float inside = 1.0f - yy * yy;
-      if (inside <= 0) continue;
+      if (inside <= 0)
+        continue;
       int half = (int)(rx * sqrtf(inside));
       DisplayManager::drawHLine(u8g2, cx - half, cy + y, 2 * half + 1);
       yield();
@@ -50,7 +49,8 @@ class BoingMode : public DisplayMode {
         float nx = (px - cx) / (float)rx;
         float ny = (py - cy) / (float)ry;
         float rr = nx * nx + ny * ny;
-        if (rr > 1.0f) continue;
+        if (rr > 1.0f)
+          continue;
 
         // lon/lat-ish mapping
         float lon = atan2f(nx, sqrtf(1.0f - rr));
@@ -87,7 +87,8 @@ class BoingMode : public DisplayMode {
 
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     float dt = deltaMs / 1000.0f;
-    if (dt > 0.05f) dt = 0.05f;
+    if (dt > 0.05f)
+      dt = 0.05f;
 
     // X ping-pong
     xPos += xDir * X_SPEED * dt;

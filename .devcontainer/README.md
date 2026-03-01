@@ -27,6 +27,7 @@ Provides a consistent, reproducible development environment across Windows, macO
 SSH keys, git config, and GitHub CLI credentials are automatically mounted from your host machine. No reauthentication required for git operations or `gh` commands.
 
 Mounted from host:
+
 - `~/.ssh` → SSH keys for git push/pull
 - `~/.gitconfig` → Git user identity and preferences
 - `~/.config/gh` → GitHub CLI authentication
@@ -53,11 +54,12 @@ Pre-commit hooks run automatically on `git commit`.
 
 ## Troubleshooting
 
-**"Docker daemon is not running"**  
+**"Docker daemon is not running"**
 Start Docker Desktop.
 
-**"Port 80 already in use"**  
+**"Port 80 already in use"**
 Stop conflicting containers:
+
 ```bash
 docker ps
 docker stop <container-id>
@@ -65,15 +67,17 @@ docker stop <container-id>
 
 Or modify port mappings in `devcontainer.json`.
 
-**"Permission denied" on Linux**  
+**"Permission denied" on Linux**
 Add user to docker group:
+
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-**"PlatformIO claims unknown board"**  
+**"PlatformIO claims unknown board"**
 Update inside the container:
+
 ```bash
 platformio update
 platformio platform install espressif8266
@@ -81,8 +85,8 @@ platformio platform install espressif8266
 
 ## Configuration
 
-`Dockerfile` - Base image and tool installation  
-`devcontainer.json` - VS Code settings and extensions  
+`Dockerfile` - Base image and tool installation
+`devcontainer.json` - VS Code settings and extensions
 `docker-compose.yml` - Optional Docker Compose configuration
 
 See [Development Containers spec](https://containers.dev/) for details.

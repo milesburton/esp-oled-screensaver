@@ -23,12 +23,14 @@ We use [AUnit](https://github.com/bxparks/AUnit) - Arduino Unit Testing Framewor
 ### Installation
 
 **Via Arduino Library Manager:**
+
 1. Open Arduino IDE
 2. Sketch → Include Library → Manage Libraries
 3. Search for "AUnit"
 4. Install "AUnit by Brian Park"
 
 **Via PlatformIO:**
+
 ```ini
 ; Already configured in platformio.ini
 lib_deps = bxparks/AUnit@^1.7.1
@@ -190,6 +192,7 @@ void loop() {
 ## Continuous Integration
 
 Tests are automatically run on:
+
 - Every push to the repository (GitHub Actions)
 - Pre-commit hooks (local)
 

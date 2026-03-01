@@ -5,22 +5,26 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 ## Features
 
 **OLED Display**
+
 - Runtime-switchable drivers (SSD1306 / SH1106)
 - Configurable X-offset for alignment
 - Pluggable display mode system
 
 **Networking**
+
 - WiFi connectivity with auto-reconnect
 - Web interface for configuration and OTA updates
 - Telnet console (port 23) for remote debugging
 - Multi-board support: Wemos D1 Mini, NodeMCU, Generic ESP8266
 
 **Display Modes** (Extensible)
+
 - Status: Device info, IP address, firmware version
 - Boing: Animated bouncing ball with rotation and physics
 - Weather: Placeholder for weather API integration
 
 **Development**
+
 - Modular architecture with single responsibility principle
 - Pre-commit hooks (clang-format, cpplint, conventional commits)
 - Automated tests and CI/CD
@@ -29,6 +33,7 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 ## Hardware
 
 **Required**
+
 - ESP8266 board (NodeMCU, Wemos D1 Mini, etc.)
 - 128x64 OLED display (SSD1306 or SH1106)
 
@@ -75,6 +80,7 @@ cp secrets.h.template secrets.h
 ## Building
 
 Supported environments in `platformio.ini`:
+
 - `esp8266_d1_mini` (4MB) - Recommended
 - `esp8266_nodmcu` (4MB)
 - `esp8266_generic` (1MB)
@@ -98,12 +104,14 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 ## Usage
 
 **Web Interface**: `http://<device-ip>/`
+
 - Device status
 - Mode switching
 - OLED configuration
 - OTA firmware updates
 
 **Telnet Console**: `telnet <device-ip> 23`
+
 - `help` - Command list
 - `status` - Device status
 - `mode status|boing|weather` - Switch display mode
@@ -113,6 +121,7 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 - `reboot` - Restart device
 
 **OTA Updates**: `http://<device-ip>/update`
+
 - Login with credentials from `secrets.h`
 - Upload new `.bin` firmware file
 
@@ -161,7 +170,7 @@ public:
   const char* getName() const override {
     return "mymode";
   }
-  
+
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_10x20_tf);
@@ -176,12 +185,14 @@ Register in the main `.ino` file and expose via web/Telnet interfaces.
 ## Development
 
 Code standards enforced by pre-commit hooks:
+
 - **C++ Formatting**: clang-format (Google style, 100 char lines)
 - **Linting**: cpplint
 - **Commits**: Conventional commits format
 - **Testing**: AUnit framework
 
 Run checks manually:
+
 ```bash
 pre-commit run --all-files
 pio test --without-uploading
@@ -192,12 +203,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## Configuration
 
 Edit compile-time constants in `src/Config.h`:
+
 - OLED SDA/SCL pins (GPIO0, GPIO2)
 - WiFi hostname
 - HTTP/Telnet ports
 - Default driver and X-offset
 
 Runtime configuration via web interface or Telnet console:
+
 - OLED driver type
 - X-offset for alignment
 - Display enable/disable

@@ -38,8 +38,7 @@ class WeatherMode : public DisplayMode {
     u8g2->print("TODO: API integration");
 
     // Border
-    DisplayManager::drawFrame(u8g2, 0, 0, Config::DISPLAY_WIDTH,
-                              Config::DISPLAY_HEIGHT);
+    DisplayManager::drawFrame(u8g2, 0, 0, Config::DISPLAY_WIDTH, Config::DISPLAY_HEIGHT);
 
     u8g2->sendBuffer();
   }

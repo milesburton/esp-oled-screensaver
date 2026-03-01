@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <cstdint>
+#endif
 
 #include "secrets.h"
 
@@ -32,9 +36,8 @@ static constexpr uint16_t TELNET_PORT = 23;
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
 
 struct RuntimeConfig {
-  OledDriver driver =
-      OledDriver::SSD1306;  // Standard configuration (fixes border)
-  int xOffset = 0;          // SSD1306 standard: 0 (no offset needed)
+  OledDriver driver = OledDriver::SSD1306;  // Standard configuration (fixes border)
+  int xOffset = 0;                          // SSD1306 standard: 0 (no offset needed)
   bool oledEnabled = true;
 
   const char* getDriverName() const {

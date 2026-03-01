@@ -1,11 +1,13 @@
 #include <Arduino.h>
-#include <cstring>
+
 #include <AUnit.h>
 
 #include "../../src/BoingMode.h"
 #include "../../src/DisplayMode.h"
 #include "../../src/StatusMode.h"
 #include "../../src/WeatherMode.h"
+
+#include <cstring>
 
 // Test StatusMode
 test(StatusModeTest, GetName) {
@@ -78,7 +80,8 @@ test(DisplayModeTest, EndMethodExists) {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
+  while (!Serial)
+    ;
   delay(1000);
 }
 

@@ -2,13 +2,14 @@
 
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+
 #include <ElegantOTA.h>
 
+#include "BoingMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "StatusMode.h"
-#include "BoingMode.h"
 #include "WeatherMode.h"
 
 class NetworkManager {
@@ -49,28 +50,22 @@ class NetworkManager {
       html += "<h1>" + String(Config::HOSTNAME) + "</h1>";
       html += "<p><b>FW:</b> " + String(Config::FW_VERSION) + "</p>";
       html += "<ul>";
-      html +=
-          "<li><b>WiFi:</b> " + String(wlStatusName(WiFi.status())) + "</li>";
+      html += "<li><b>WiFi:</b> " + String(wlStatusName(WiFi.status())) + "</li>";
       html += "<li><b>IP:</b> " + WiFi.localIP().toString() + "</li>";
-      html += "<li><b>RSSI:</b> " +
-              String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) +
-              "</li>";
+      html +=
+          "<li><b>RSSI:</b> " + String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) + "</li>";
       html += "<li><b>Heap:</b> " + String(ESP.getFreeHeap()) + "</li>";
 
       if (displayManager && displayManager->getCurrentMode()) {
-        html += "<li><b>Mode:</b> " +
-                String(displayManager->getCurrentMode()->getName()) + "</li>";
+        html += "<li><b>Mode:</b> " + String(displayManager->getCurrentMode()->getName()) + "</li>";
       }
 
-      html += "<li><b>OLED:</b> " +
-              String(Config::runtime.oledEnabled ? "on" : "off") + "</li>";
-      html += "<li><b>Driver:</b> " + String(Config::runtime.getDriverName()) +
-              "</li>";
-      html +=
-          "<li><b>X offset:</b> " + String(Config::runtime.xOffset) + "</li>";
+      html += "<li><b>OLED:</b> " + String(Config::runtime.oledEnabled ? "on" : "off") + "</li>";
+      html += "<li><b>Driver:</b> " + String(Config::runtime.getDriverName()) + "</li>";
+      html += "<li><b>X offset:</b> " + String(Config::runtime.xOffset) + "</li>";
       html += "<li><b>I2C:</b> SDA=" + String(Config::OLED_SDA) +
-              " SCL=" + String(Config::OLED_SCL) + " addr=0x" +
-              String(Config::OLED_ADDR, HEX) + "</li>";
+              " SCL=" + String(Config::OLED_SCL) + " addr=0x" + String(Config::OLED_ADDR, HEX) +
+              "</li>";
       html += "</ul>";
 
       html += "<p><a href='/update'>OTA Update</a></p>";
@@ -92,8 +87,7 @@ class NetworkManager {
       html +=
           "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 "
           "(common)</a></li>";
-      html +=
-          "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
+      html += "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
       html += "</ul>";
       html +=
           "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED "
@@ -132,8 +126,7 @@ class NetworkManager {
     http.on("/oled", HTTP_GET, [this]() {
       if (http.hasArg("on")) {
         Config::runtime.oledEnabled = (http.arg("on") == "1");
-        Logger::printf("OLED: %s",
-                       Config::runtime.oledEnabled ? "enabled" : "disabled");
+        Logger::printf("OLED: %s", Config::runtime.oledEnabled ? "enabled" : "disabled");
 
         if (!Config::runtime.oledEnabled && displayManager) {
           displayManager->clear();
@@ -151,16 +144,16 @@ class NetworkManager {
       if (http.hasArg("drv")) {
         String d = http.arg("drv");
         d.toLowerCase();
-        Config::runtime.driver = (d == "ssd1306") ? Config::OledDriver::SSD1306
-                                                  : Config::OledDriver::SH1106;
+        Config::runtime.driver =
+            (d == "ssd1306") ? Config::OledDriver::SSD1306 : Config::OledDriver::SH1106;
       }
 
       if (http.hasArg("xoff")) {
         Config::runtime.xOffset = http.arg("xoff").toInt();
       }
 
-      Logger::printf("OLED config: drv=%s xoff=%d",
-                     Config::runtime.getDriverName(), Config::runtime.xOffset);
+      Logger::printf("OLED config: drv=%s xoff=%d", Config::runtime.getDriverName(),
+                     Config::runtime.xOffset);
 
       if (displayManager) {
         displayManager->selectDriver();
@@ -223,10 +216,8 @@ class NetworkManager {
   }
 
   void logStatus() {
-    Logger::printf(
-        "WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
-        (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str()
-                                        : "(unset)",
-        (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
+    Logger::printf("WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
+                   (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str() : "(unset)",
+                   (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
   }
 };

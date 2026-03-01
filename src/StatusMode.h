@@ -35,8 +35,7 @@ class StatusMode : public DisplayMode {
     }
 
     // Border to test alignment
-    DisplayManager::drawFrame(u8g2, 0, 0, Config::DISPLAY_WIDTH,
-                              Config::DISPLAY_HEIGHT);
+    DisplayManager::drawFrame(u8g2, 0, 0, Config::DISPLAY_WIDTH, Config::DISPLAY_HEIGHT);
 
     u8g2->sendBuffer();
   }

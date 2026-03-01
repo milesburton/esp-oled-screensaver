@@ -1,14 +1,15 @@
 #pragma once
 
 #include <ESP8266WiFi.h>
+
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 
+#include "BoingMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "StatusMode.h"
-#include "BoingMode.h"
 #include "WeatherMode.h"
 
 class TelnetConsole {
@@ -25,8 +26,7 @@ class TelnetConsole {
     client.println("  help                   - Show this help");
     client.println("  status                 - Show device status");
     client.println("  drv ssd1306|sh1106     - Set OLED driver");
-    client.println(
-        "  xoff <int>             - Set X offset (e.g., xoff 0 or xoff 2)");
+    client.println("  xoff <int>             - Set X offset (e.g., xoff 0 or xoff 2)");
     client.println("  mode status|boing|weather - Switch display mode");
     client.println("  oled on|off            - Enable/disable OLED");
     client.println("  reboot                 - Restart device");
@@ -35,12 +35,10 @@ class TelnetConsole {
   void sendStatus() {
     client.printf("fw=%s ip=%s rssi=%d heap=%u\n", Config::FW_VERSION,
                   WiFi.localIP().toString().c_str(),
-                  (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0,
-                  ESP.getFreeHeap());
+                  (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
     client.printf("oled=%d drv=%s xoff=%d sda=%u scl=%u addr=0x%02X\n",
-                  Config::runtime.oledEnabled ? 1 : 0,
-                  Config::runtime.getDriverName(), Config::runtime.xOffset,
-                  Config::OLED_SDA, Config::OLED_SCL, Config::OLED_ADDR);
+                  Config::runtime.oledEnabled ? 1 : 0, Config::runtime.getDriverName(),
+                  Config::runtime.xOffset, Config::OLED_SDA, Config::OLED_SCL, Config::OLED_ADDR);
     if (displayManager && displayManager->getCurrentMode()) {
       client.printf("mode=%s\n", displayManager->getCurrentMode()->getName());
     }

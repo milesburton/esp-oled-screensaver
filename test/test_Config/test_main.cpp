@@ -1,15 +1,23 @@
 #include <Arduino.h>
-#include <cstring>
+
 #include <AUnit.h>
 
 #include "../../src/Config.h"
 
+#include <cstring>
+
 // Test default OLED hardware configuration
-test(ConfigTest, DefaultOledSDA) { assertEqual(Config::OLED_SDA, 0); }
+test(ConfigTest, DefaultOledSDA) {
+  assertEqual(Config::OLED_SDA, 0);
+}
 
-test(ConfigTest, DefaultOledSCL) { assertEqual(Config::OLED_SCL, 2); }
+test(ConfigTest, DefaultOledSCL) {
+  assertEqual(Config::OLED_SCL, 2);
+}
 
-test(ConfigTest, DefaultOledAddress) { assertEqual(Config::OLED_ADDR, 0x3C); }
+test(ConfigTest, DefaultOledAddress) {
+  assertEqual(Config::OLED_ADDR, 0x3C);
+}
 
 // Test display dimensions
 test(ConfigTest, DefaultDisplayWidth) {
@@ -21,9 +29,13 @@ test(ConfigTest, DefaultDisplayHeight) {
 }
 
 // Test network port configuration
-test(ConfigTest, DefaultHTTPPort) { assertEqual(Config::HTTP_PORT, 80); }
+test(ConfigTest, DefaultHTTPPort) {
+  assertEqual(Config::HTTP_PORT, 80);
+}
 
-test(ConfigTest, DefaultTelnetPort) { assertEqual(Config::TELNET_PORT, 23); }
+test(ConfigTest, DefaultTelnetPort) {
+  assertEqual(Config::TELNET_PORT, 23);
+}
 
 // Test runtime configuration
 test(ConfigTest, RuntimeConfigDefaultDriver) {
@@ -102,7 +114,8 @@ test(ConfigTest, VersionIsDefined) {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
+  while (!Serial)
+    ;
   delay(1000);
 }
 

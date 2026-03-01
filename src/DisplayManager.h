@@ -28,7 +28,8 @@ class DisplayManager {
   {}
 
   void begin() {
-    if (!Config::runtime.oledEnabled) return;
+    if (!Config::runtime.oledEnabled)
+      return;
 
     Wire.begin(Config::OLED_SDA, Config::OLED_SCL);
     Wire.setClock(400000);
@@ -37,16 +38,15 @@ class DisplayManager {
     selectDriver();
 
     Logger::printf("Display: initialized drv=%s addr=0x%02X xoff=%d",
-                   Config::runtime.getDriverName(), Config::OLED_ADDR,
-                   Config::runtime.xOffset);
+                   Config::runtime.getDriverName(), Config::OLED_ADDR, Config::runtime.xOffset);
   }
 
   void selectDriver() {
-    if (!Config::runtime.oledEnabled) return;
+    if (!Config::runtime.oledEnabled)
+      return;
 
-    u8g2 = (Config::runtime.driver == Config::OledDriver::SSD1306)
-               ? (U8G2*)&u8g2_ssd
-               : (U8G2*)&u8g2_sh;
+    u8g2 = (Config::runtime.driver == Config::OledDriver::SSD1306) ? (U8G2*)&u8g2_ssd
+                                                                   : (U8G2*)&u8g2_sh;
 
     u8g2->setI2CAddress(Config::OLED_ADDR << 1);
     u8g2->begin();
@@ -68,7 +68,8 @@ class DisplayManager {
   }
 
   void update() {
-    if (!Config::runtime.oledEnabled || !u8g2 || !currentMode) return;
+    if (!Config::runtime.oledEnabled || !u8g2 || !currentMode)
+      return;
 
     uint32_t now = millis();
     if (now - lastFrameMs >= frameIntervalMs) {

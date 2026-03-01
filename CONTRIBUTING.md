@@ -3,6 +3,7 @@
 ## Setup
 
 **Development Container (Recommended)**:
+
 ```bash
 code .
 # Click "Reopen in Container"
@@ -11,6 +12,7 @@ code .
 See [.devcontainer/README.md](.devcontainer/README.md).
 
 **Local Installation**:
+
 ```bash
 git clone https://github.com/milesburton/esp8266-weather-clock.git
 cd esp8266-weather-clock
@@ -42,6 +44,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`
 
 **Examples**:
+
 ```bash
 feat(modes): add temperature display
 fix(display): correct X-offset for SH1106
@@ -52,6 +55,7 @@ test(logger): add printf test with multiple args
 ## Adding Display Modes
 
 1. Create mode in `src/MyMode.h`:
+
 ```cpp
 #pragma once
 #include "DisplayMode.h"
@@ -61,7 +65,7 @@ public:
   const char* getName() const override {
     return "mymode";
   }
-  
+
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     u8g2->clearBuffer();
     u8g2->drawStr(0, 20, "My Mode");
@@ -71,6 +75,7 @@ public:
 ```
 
 2. Register in `src/OA_OLED_Display_with_wifi_working.ino`:
+
 ```cpp
 #include "MyMode.h"
 MyMode myMode;
@@ -107,6 +112,7 @@ Aim for >80% test coverage.
 ## Code Quality
 
 Pre-commit hooks automatically run:
+
 - clang-format (C++ formatting)
 - cpplint (linting)
 - markdownlint (docs)

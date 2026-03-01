@@ -13,3 +13,12 @@ MD024:
 
 # First line doesn't need to be h1
 MD041: false
+
+# Allow emphasized text where heading-like callouts are used
+MD036: false
+
+# Allow unlabeled fenced code blocks
+MD040: false
+
+# Allow ordered list numbering styles other than strict 1/1/1
+MD029: false

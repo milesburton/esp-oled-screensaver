@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include <AUnit.h>
 
 #include "../../src/Logger.h"
@@ -17,8 +18,7 @@ test(LoggerTest, PrintlnEmpty) {
 
 test(LoggerTest, PrintlnLong) {
   // Logger should handle long strings
-  Logger::println(
-      "This is a very long message that should still be handled correctly");
+  Logger::println("This is a very long message that should still be handled correctly");
   assertTrue(true);
 }
 
@@ -56,7 +56,8 @@ test(LoggerTest, ConsecutiveCalls) {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
+  while (!Serial)
+    ;
   delay(1000);
 }
 
