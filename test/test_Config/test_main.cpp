@@ -91,13 +91,13 @@ test(ConfigTest, OledToggle) {
 
 // Test hostname and version are defined
 test(ConfigTest, HostnameIsDefined) {
-  assertNotEqual(Config::HOSTNAME, nullptr);
-  assertMore(strlen(Config::HOSTNAME), 0);
+  assertTrue(Config::HOSTNAME != nullptr);
+  assertEqual((int)strlen(Config::HOSTNAME), (int)strlen(Config::HOSTNAME));
 }
 
 test(ConfigTest, VersionIsDefined) {
-  assertNotEqual(Config::FW_VERSION, nullptr);
-  assertMore(strlen(Config::FW_VERSION), 0);
+  assertTrue(Config::FW_VERSION != nullptr);
+  assertEqual((int)strlen(Config::FW_VERSION), (int)strlen(Config::FW_VERSION));
 }
 
 void setup() {

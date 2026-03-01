@@ -15,7 +15,7 @@ test(StatusModeTest, GetName) {
 
 test(StatusModeTest, NameIsNotNull) {
   StatusMode mode;
-  assertNotEqual(mode.getName(), nullptr);
+  assertTrue(mode.getName() != nullptr);
 }
 
 // Test BoingMode
@@ -26,7 +26,7 @@ test(BoingModeTest, GetName) {
 
 test(BoingModeTest, NameIsNotNull) {
   BoingMode mode;
-  assertNotEqual(mode.getName(), nullptr);
+  assertTrue(mode.getName() != nullptr);
 }
 
 // Test WeatherMode
@@ -37,7 +37,7 @@ test(WeatherModeTest, GetName) {
 
 test(WeatherModeTest, NameIsNotNull) {
   WeatherMode mode;
-  assertNotEqual(mode.getName(), nullptr);
+  assertTrue(mode.getName() != nullptr);
 }
 
 // Test mode name consistency
