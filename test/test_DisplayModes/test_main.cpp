@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <AUnit.h>
 
 #include "../../src/BoingMode.h"
@@ -77,7 +78,9 @@ test(DisplayModeTest, EndMethodExists) {
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-  Serial.println("\n\n" __FILE__ " - DisplayMode Tests");
+  delay(1000);
 }
 
-void loop() { aunit::TestRunner::run(); }
+void loop() {
+  aunit::TestRunner::run();
+}

@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <AUnit.h>
 
 #include "../../src/Logger.h"
@@ -56,7 +57,9 @@ test(LoggerTest, ConsecutiveCalls) {
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-  Serial.println("\n\n" __FILE__ " - Logger Module Tests");
+  delay(1000);
 }
 
-void loop() { aunit::TestRunner::run(); }
+void loop() {
+  aunit::TestRunner::run();
+}
