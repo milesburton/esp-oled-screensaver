@@ -60,9 +60,9 @@ class DisplayManager {
 
     uint8_t newRotation = Config::runtime.getU8G2Rotation();
     if (currentRotation != newRotation) {
-      // Map DisplayRotation enum to U8G2 rotation callbacks
       const u8g2_cb_t* rotation_cb[] = {U8G2_R0, U8G2_R1, U8G2_R2, U8G2_R3};
       u8g2->setDisplayRotation(rotation_cb[newRotation]);
+      u8g2->begin();
       currentRotation = newRotation;
       Logger::printf("Display: rotation set to %s", Config::runtime.getRotationName());
     }
