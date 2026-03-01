@@ -129,7 +129,7 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 
 ```
 src/
-├── OA_OLED_Display_with_wifi_working.ino  # Main sketch (~60 lines)
+├── ESP8266-OLED-Experiment.ino            # Main sketch (~60 lines)
 ├── Config.h / Config.cpp                  # Configuration & constants
 ├── Logger.h                               # Unified logging
 ├── DisplayManager.h                       # OLED management

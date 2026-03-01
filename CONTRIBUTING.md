@@ -74,7 +74,7 @@ public:
 };
 ```
 
-2. Register in `src/OA_OLED_Display_with_wifi_working.ino`:
+2. Register in `src/ESP8266-OLED-Experiment.ino`:
 
 ```cpp
 #include "MyMode.h"

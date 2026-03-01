@@ -1,5 +1,5 @@
 {
-  "name": "ESP8266 Weather Clock",
+  "name": "ESP8266-OLED-Experiment",
   "dockerFile": "Dockerfile",
   "context": "..",
   "remoteUser": "vscode",
@@ -65,6 +65,12 @@
           "**/.pio": true,
           "**/build": true,
           "**/.git": true
+        },
+        "terminal.integrated.defaultProfile.linux": "fish",
+        "terminal.integrated.profiles.linux": {
+          "fish": {
+            "path": "/usr/bin/fish"
+          }
         }
       }
     }

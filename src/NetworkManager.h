@@ -18,10 +18,9 @@ class NetworkManager {
   BoingMode* boingMode;
   WeatherMode* weatherMode;
 
-  // WiFi reconnection state
   uint32_t wifiRetryMs = 0;
-  uint32_t wifiRetryIntervalMs = 5000;  // Start at 5s
-  static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;  // Cap at 5 min
+  uint32_t wifiRetryIntervalMs = 5000;
+  static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -45,7 +44,6 @@ class NetworkManager {
   }
 
   void setupRoutes() {
-    // Root page
     http.on("/", HTTP_GET, [this]() {
       String html;
       html.reserve(2000);
@@ -83,25 +81,38 @@ class NetworkManager {
       html += "<h3>OLED Configuration</h3>";
       html += "<p>Try these until border + text align perfectly:</p>";
       html += "<ul>";
-      html +=
-          "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 "
-          "(common)</a></li>";
+      html += "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 (common)</a></li>";
       html += "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>";
-      html +=
-          "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 "
-          "(common)</a></li>";
+      html += "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 (common)</a></li>";
       html += "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
       html += "</ul>";
-      html +=
-          "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED "
-          "OFF</a></p>";
+      html += "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED OFF</a></p>";
 
       html += "<p><i>Telnet console on port 23</i></p>";
 
       http.send(200, "text/html", html);
     });
 
-    // Mode switching
+    http.on("/health", HTTP_GET, [this]() {
+      String json;
+      json.reserve(256);
+      json += "{";
+      json += "\"fw\":\"" + String(Config::FW_VERSION) + "\",";
+      json += "\"uptime_ms\":" + String(millis()) + ",";
+      json += "\"heap_free\":" + String(ESP.getFreeHeap()) + ",";
+      json += "\"wifi\":\"" + String(wlStatusName(WiFi.status())) + "\",";
+      json += "\"rssi\":" + String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) + ",";
+      json += "\"ip\":\"" +
+              (WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : String("")) + "\",";
+      if (displayManager && displayManager->getCurrentMode()) {
+        json += "\"mode\":\"" + String(displayManager->getCurrentMode()->getName()) + "\"";
+      } else {
+        json += "\"mode\":null";
+      }
+      json += "}";
+      http.send(200, "application/json", json);
+    });
+
     http.on("/mode", HTTP_GET, [this]() {
       if (!displayManager) {
         http.send(500, "text/plain", "Display manager not initialized");
@@ -122,7 +133,6 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
-    // OLED on/off
     http.on("/oled", HTTP_GET, [this]() {
       if (http.hasArg("on")) {
         Config::runtime.oledEnabled = (http.arg("on") == "1");
@@ -139,7 +149,6 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
-    // OLED configuration
     http.on("/oledcfg", HTTP_GET, [this]() {
       if (http.hasArg("drv")) {
         String d = http.arg("drv");
@@ -170,14 +179,12 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
-    // Reboot
     http.on("/reboot", HTTP_GET, [this]() {
       http.send(200, "text/plain", "Rebooting...");
       delay(100);
       ESP.restart();
     });
 
-    // 404
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
   }
 
@@ -198,7 +205,6 @@ class NetworkManager {
   }
 
   void begin() {
-    // WiFi setup
     WiFi.persistent(false);
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
@@ -208,7 +214,6 @@ class NetworkManager {
 
     Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
 
-    // HTTP server setup
     setupRoutes();
     ElegantOTA.begin(&http, Config::OTA_USER, Config::OTA_PASS);
     http.begin();
@@ -221,21 +226,17 @@ class NetworkManager {
     http.handleClient();
     ElegantOTA.loop();
 
-    // Reconnect with exponential backoff on connection failure
     wl_status_t status = WiFi.status();
-    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST ||
-        status == WL_DISCONNECTED) {
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED) {
       uint32_t now = millis();
       if (now - wifiRetryMs >= wifiRetryIntervalMs) {
         Logger::printf("WiFi: reconnecting (interval=%lus)...", wifiRetryIntervalMs / 1000);
         WiFi.disconnect();
         WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
         wifiRetryMs = now;
-        // Double the interval up to the cap
         wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
       }
     } else if (status == WL_CONNECTED) {
-      // Reset backoff on successful connection
       wifiRetryIntervalMs = 5000;
     }
   }

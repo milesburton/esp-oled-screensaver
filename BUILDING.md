@@ -87,7 +87,7 @@ pio run -e esp8266_d1_mini -t clean
 pio run -e esp8266_d1_mini -t upload
 
 # Arduino IDE
-1. Open OA_OLED_Display_with_wifi_working.ino
+1. Open ESP8266-OLED-Experiment.ino
 2. Select board and port
 3. Sketch → Upload
 ```
