@@ -9,16 +9,16 @@
 // Hardware: ESP8266 + 128x64 OLED (SSD1306/SH1106)
 // Wiring: SDA=GPIO0, SCL=GPIO2, I2C addr=0x3C
 
-#include "../Config.h"
-#include "../DisplayManager.h"
-#include "../Logger.h"
-#include "../NetworkManager.h"
-#include "../TelnetConsole.h"
+#include "Config.h"
+#include "DisplayManager.h"
+#include "Logger.h"
+#include "NetworkManager.h"
+#include "TelnetConsole.h"
 
 // Display modes
-#include "../BoingMode.h"
-#include "../StatusMode.h"
-#include "../WeatherMode.h"
+#include "BoingMode.h"
+#include "StatusMode.h"
+#include "WeatherMode.h"
 
 // ===== Global Components =====
 DisplayManager displayManager;
