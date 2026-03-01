@@ -180,8 +180,8 @@ jobs:
         with:
           ref: v${{ needs.create-release.outputs.new_version }}
 
-      - name: Set up secrets
-        run: cp src/secrets.h.ci src/secrets.h
+      - name: Set up secrets for release
+        run: cp src/secrets.h.release src/secrets.h
 
       - name: Set up Python
         uses: actions/setup-python@v5

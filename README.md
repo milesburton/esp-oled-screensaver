@@ -63,7 +63,16 @@ I2C Address: 0x3C (configurable at compile time)
 
 3. **Flash via OTA** or use `esptool.py` for initial upload
 
+4. **First Boot - Setup Mode**:
+   After flashing, the device starts in **AP (Access Point) setup mode** by default:
+   - Look for WiFi network: `esp-oled-setup` (password: `setup1234`)
+   - Open your browser to: `http://192.168.4.1/`
+   - Configure your WiFi credentials
+   - Device will reboot and connect to your network
+
 **Important**: If you see `ERROR[9]: new Flash config wrong, real size: 1048576` when uploading, your device has 1MB flash. Use the **generic** binary instead.
+
+**Device won't connect?** See [RECOVERY.md](RECOVERY.md) for troubleshooting and recovery options.
 
 ### With Development Container (Recommended)
 
