@@ -194,21 +194,6 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
-    http.on("/rotation", HTTP_GET, [this]() {
-      if (http.hasArg("rot")) {
-        int rot = http.arg("rot").toInt();
-        if (rot >= 0 && rot <= 3) {
-          if (displayManager) {
-            displayManager->setRotation(static_cast<Config::DisplayRotation>(rot));
-          }
-          Logger::printf("Display: rotation set to %s", Config::runtime.getRotationName());
-        }
-      }
-
-      http.sendHeader("Location", "/");
-      http.send(302, "text/plain", "");
-    });
-
     http.on("/reboot", HTTP_GET, [this]() {
       http.send(200, "text/plain", "Rebooting...");
       delay(100);
