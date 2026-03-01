@@ -1,0 +1,264 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up secrets
+        run: cp src/secrets.h.ci src/secrets.h
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install platformio pre-commit
+      
+      - name: Run pre-commit checks
+        run: pre-commit run --all-files
+      
+      - name: Run tests
+        run: pio test --without-uploading
+      
+      - name: Build all environments
+        run: |
+          pio run -e esp8266_d1_mini
+          pio run -e esp8266_nodmcu
+          pio run -e esp8266_generic
+
+  create-release:
+    name: Create Release
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      release_created: ${{ steps.version.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up secrets
+        run: cp src/secrets.h.ci src/secrets.h
+      
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+      
+      - name: Calculate new version
+        id: version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
+          BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
+          
+          # Parse semantic version
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          
+          # Increment based on bump type
+          case $BUMP_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "release_created=true" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+      
+      - name: Update version in Config.h
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          sed -i "s/FW_VERSION = \"platform-[^\"]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
+          echo "Updated version to platform-${NEW_VERSION}"
+      
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/Config.h
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git push
+      
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          git tag "v${NEW_VERSION}"
+          git push origin "v${NEW_VERSION}"
+
+  build-and-release:
+    name: Build and Publish Release
+    needs: create-release
+    if: needs.create-release.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        environment: [esp8266_d1_mini, esp8266_nodmcu, esp8266_generic]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.create-release.outputs.new_version }}
+      
+      - name: Set up secrets
+        run: cp src/secrets.h.ci src/secrets.h
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+      
+      - name: Install PlatformIO
+        run: pip install platformio
+      
+      - name: Build firmware
+        run: pio run -e ${{ matrix.environment }}
+      
+      - name: Package firmware
+        run: |
+          mkdir -p release
+          VERSION="${{ needs.create-release.outputs.new_version }}"
+          ENV="${{ matrix.environment }}"
+          FIRMWARE_NAME="esp8266-weather-clock_v${VERSION}_${ENV}.bin"
+          
+          cp .pio/build/${ENV}/firmware.bin "release/${FIRMWARE_NAME}"
+          
+          # Create checksum
+          cd release
+          sha256sum "${FIRMWARE_NAME}" > "${FIRMWARE_NAME}.sha256"
+          cd ..
+      
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.environment }}
+          path: release/
+          retention-days: 90
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [create-release, build-and-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.create-release.outputs.new_version }}
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release files
+        run: |
+          mkdir -p release_files
+          find artifacts -type f \( -name "*.bin" -o -name "*.sha256" \) -exec cp {} release_files/ \;
+          ls -la release_files/
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="v${{ needs.create-release.outputs.new_version }}"
+          
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG="Initial release"
+          else
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.create-release.outputs.new_version }}
+          name: Release v${{ needs.create-release.outputs.new_version }}
+          body: |
+            ## ESP8266 Weather Clock v${{ needs.create-release.outputs.new_version }}
+            
+            **Release Date**: ${{ github.event.head_commit.timestamp }}
+            **Commit**: ${{ github.sha }}
+            
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### Supported Boards
+            - Wemos D1 Mini (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin`)
+            - NodeMCU v2 (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_nodmcu.bin`)
+            - Generic ESP8266 (`esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_generic.bin`)
+            
+            ### Installation
+            
+            **Via OTA** (Recommended):
+            ```
+            1. Navigate to http://<device-ip>/update
+            2. Select the .bin file for your board
+            3. Upload and wait for reboot
+            ```
+            
+            **Via PlatformIO**:
+            ```bash
+            pio run -e esp8266_d1_mini -t upload
+            ```
+            
+            ### Verification
+            ```bash
+            sha256sum -c esp8266-weather-clock_v${{ needs.create-release.outputs.new_version }}_esp8266_d1_mini.bin.sha256
+            ```
+          files: release_files/*
+          draft: false
+          prerelease: false

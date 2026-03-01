@@ -32,6 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Set up secrets for testing
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+      
       - name: Cache PlatformIO
         uses: actions/cache@v3
         with:
@@ -51,11 +55,7 @@ jobs:
       
       - name: Run tests
         run: |
-          if [ -f "platformio.ini" ]; then
-            pio test --without-uploading
-          else
-            echo "PlatformIO not configured yet - skipping tests"
-          fi
+          pio test --without-uploading
   
   conventional-commits:
     name: Conventional Commits
@@ -94,6 +94,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Set up secrets for build
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -118,7 +122,7 @@ jobs:
       - name: Create firmware artifact
         run: |
           mkdir -p firmware_artifacts
-          VERSION=$(grep 'FW_VERSION' Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
           cp .pio/build/${{ matrix.environment }}/firmware.bin \
              firmware_artifacts/esp8266-weather-clock_${VERSION}_${{ matrix.environment }}.bin
       

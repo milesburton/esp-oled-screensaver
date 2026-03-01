@@ -17,6 +17,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Set up secrets for build
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -39,7 +43,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'FW_VERSION' Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
       
@@ -81,7 +85,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'FW_VERSION' Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Prepare release files
