@@ -56,7 +56,7 @@ pio run -e esp8266_d1_mini
 pio run -e esp8266_d1_mini -t upload
 
 # Build and upload via OTA
-pio run -e esp8266_d1_mini -t upload --upload-port=esp-weather-clock.local
+pio run -e esp8266_d1_mini -t upload --upload-port=oled-display.local
 
 # Monitor serial
 pio device monitor -b 115200

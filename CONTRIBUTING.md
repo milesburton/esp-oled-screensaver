@@ -14,8 +14,8 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 **Local Installation**:
 
 ```bash
-git clone https://github.com/milesburton/esp8266-weather-clock.git
-cd esp8266-weather-clock
+git clone https://github.com/milesburton/esp8266-oled-experiment.git
+cd esp8266-oled-experiment
 cp secrets.h.template secrets.h
 
 pip install pre-commit

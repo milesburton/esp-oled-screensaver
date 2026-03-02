@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /workspaces/OA_OLED_Display_with_wifi_working rm release/esp8266-oled-experiment_v1.0.10_esp8266_d1_mini.bin.sha256 release/esp8266-oled-experiment_v1.0.10_esp8266_generic.bin.sha256 release/esp8266-oled-experiment_v1.0.10_esp8266_nodmcu.bin.sha256)",
+      "Bash(echo \"exit:$?\")"
+    ]
+  }
+}

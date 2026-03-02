@@ -23,7 +23,7 @@ VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 echo -e "${YELLOW}================================================${NC}"
-echo -e "${YELLOW}ESP8266 Weather Clock - Build Script${NC}"
+echo -e "${YELLOW}ESP8266 OLED Screensaver - Build Script${NC}"
 echo -e "${YELLOW}================================================${NC}"
 echo "Environment: $TARGET_ENV"
 echo "Version: platform-$VERSION"
@@ -55,7 +55,7 @@ if [ ! -f "$BUILD_DIR/firmware.bin" ]; then
 fi
 
 # Copy and rename firmware for OTA
-FIRMWARE_NAME="esp8266-weather-clock_${VERSION}_${TARGET_ENV}_${TIMESTAMP}.bin"
+FIRMWARE_NAME="esp8266-oled-experiment_${VERSION}_${TARGET_ENV}_${TIMESTAMP}.bin"
 FIRMWARE_PATH="$FIRMWARE_DIR/$FIRMWARE_NAME"
 
 cp "$BUILD_DIR/firmware.bin" "$FIRMWARE_PATH"
@@ -74,7 +74,7 @@ echo ""
 # Generate build info
 BUILD_INFO_FILE="$FIRMWARE_DIR/build_info.txt"
 cat > "$BUILD_INFO_FILE" << EOF
-ESP8266 Weather Clock Build Information
+ESP8266 OLED Screensaver Build Information
 $(date)
 
 Version: platform-$VERSION

@@ -1,4 +1,4 @@
-# ESP8266 Weather Clock - OLED Display with WiFi
+# ESP8266 OLED Screensaver - Display with WiFi
 
 Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes, WiFi connectivity, OTA updates, and remote debugging via Telnet.
 

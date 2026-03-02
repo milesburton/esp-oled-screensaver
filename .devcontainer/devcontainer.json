@@ -1,5 +1,5 @@
 {
-  "name": "ESP8266 Weather Clock",
+  "name": "ESP8266 OLED Screensaver",
   "dockerFile": "Dockerfile",
   "context": ".",
   "remoteUser": "vscode",

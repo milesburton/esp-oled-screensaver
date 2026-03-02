@@ -1,6 +1,6 @@
 # Unit Tests
 
-This directory contains unit and integration tests for the ESP8266 Weather Clock project.
+This directory contains unit and integration tests for the ESP8266 OLED Screensaver project.
 
 ## Directory Structure
 
