@@ -185,6 +185,9 @@ class SonicMode : public DisplayMode {
   void end() override {}
 
   void update(U8G2* u8g2, uint32_t deltaMs) override {
+    if (!u8g2 || deltaMs == 0)
+      return;
+
     _sonicX += (RUN_SPEED_PPS * static_cast<int>(deltaMs)) / 1000;
     if (_sonicX > W) {
       _sonicX = -SPR_W;
@@ -201,7 +204,8 @@ class SonicMode : public DisplayMode {
     u8g2->clearBuffer();
     drawGround(u8g2);
 
-    if (_sonicX + SPR_W > 0 && _sonicX < W) {
+    if (_frameIdx < FRAME_COUNT && SONIC_FRAMES[_frameIdx] != nullptr && 
+        _sonicX + SPR_W > 0 && _sonicX < W) {
       int spriteY = GROUND_Y - FEET_OFFSET;
       u8g2->drawXBM(_sonicX, spriteY, SPR_W, SPR_H, SONIC_FRAMES[_frameIdx]);
     }
