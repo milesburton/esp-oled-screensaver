@@ -6,7 +6,10 @@
 #include "../../src/BreakoutMode.h"
 #include "../../src/ClockMode.h"
 #include "../../src/DisplayMode.h"
+#include "../../src/LifeMode.h"
 #include "../../src/PacManMode.h"
+#include "../../src/SonicMode.h"
+#include "../../src/StarfieldMode.h"
 #include "../../src/StatusMode.h"
 #include "../../src/WeatherMode.h"
 
@@ -73,6 +76,54 @@ test(PacManModeTest, NameIsNotNull) {
   assertTrue(mode.getName() != nullptr);
 }
 
+test(StarfieldModeTest, GetName) {
+  StarfieldMode mode;
+  assertEqual(strcmp("starfield", mode.getName()), 0);
+}
+
+test(StarfieldModeTest, NameIsNotNull) {
+  StarfieldMode mode;
+  assertTrue(mode.getName() != nullptr);
+}
+
+test(StarfieldModeTest, BeginDoesNotCrash) {
+  StarfieldMode mode;
+  mode.begin();
+  assertTrue(true);
+}
+
+test(LifeModeTest, GetName) {
+  LifeMode mode;
+  assertEqual(strcmp("life", mode.getName()), 0);
+}
+
+test(LifeModeTest, NameIsNotNull) {
+  LifeMode mode;
+  assertTrue(mode.getName() != nullptr);
+}
+
+test(LifeModeTest, BeginDoesNotCrash) {
+  LifeMode mode;
+  mode.begin();
+  assertTrue(true);
+}
+
+test(SonicModeTest, GetName) {
+  SonicMode mode;
+  assertEqual(strcmp("sonic", mode.getName()), 0);
+}
+
+test(SonicModeTest, NameIsNotNull) {
+  SonicMode mode;
+  assertTrue(mode.getName() != nullptr);
+}
+
+test(SonicModeTest, BeginDoesNotCrash) {
+  SonicMode mode;
+  mode.begin();
+  assertTrue(true);
+}
+
 test(DisplayModeTest, NamesAreLowercase) {
   StatusMode status;
   BoingMode boing;
@@ -80,6 +131,9 @@ test(DisplayModeTest, NamesAreLowercase) {
   ClockMode clock;
   BreakoutMode breakout;
   PacManMode pacman;
+  StarfieldMode starfield;
+  LifeMode life;
+  SonicMode sonic;
 
   assertEqual(strcmp("status", status.getName()), 0);
   assertEqual(strcmp("boing", boing.getName()), 0);
@@ -87,6 +141,9 @@ test(DisplayModeTest, NamesAreLowercase) {
   assertEqual(strcmp("clock", clock.getName()), 0);
   assertEqual(strcmp("breakout", breakout.getName()), 0);
   assertEqual(strcmp("pacman", pacman.getName()), 0);
+  assertEqual(strcmp("starfield", starfield.getName()), 0);
+  assertEqual(strcmp("life", life.getName()), 0);
+  assertEqual(strcmp("sonic", sonic.getName()), 0);
 }
 
 test(DisplayModeTest, NamesAreUnique) {
@@ -96,22 +153,17 @@ test(DisplayModeTest, NamesAreUnique) {
   ClockMode clock;
   BreakoutMode breakout;
   PacManMode pacman;
+  StarfieldMode starfield;
+  LifeMode life;
+  SonicMode sonic;
 
-  assertNotEqual(strcmp(status.getName(), boing.getName()), 0);
-  assertNotEqual(strcmp(status.getName(), weather.getName()), 0);
-  assertNotEqual(strcmp(status.getName(), clock.getName()), 0);
-  assertNotEqual(strcmp(status.getName(), breakout.getName()), 0);
-  assertNotEqual(strcmp(status.getName(), pacman.getName()), 0);
-  assertNotEqual(strcmp(boing.getName(), weather.getName()), 0);
-  assertNotEqual(strcmp(boing.getName(), clock.getName()), 0);
-  assertNotEqual(strcmp(boing.getName(), breakout.getName()), 0);
-  assertNotEqual(strcmp(boing.getName(), pacman.getName()), 0);
-  assertNotEqual(strcmp(weather.getName(), clock.getName()), 0);
-  assertNotEqual(strcmp(weather.getName(), breakout.getName()), 0);
-  assertNotEqual(strcmp(weather.getName(), pacman.getName()), 0);
-  assertNotEqual(strcmp(clock.getName(), breakout.getName()), 0);
-  assertNotEqual(strcmp(clock.getName(), pacman.getName()), 0);
-  assertNotEqual(strcmp(breakout.getName(), pacman.getName()), 0);
+  const char* names[] = {status.getName(), boing.getName(),    weather.getName(),
+                         clock.getName(),  breakout.getName(), pacman.getName(),
+                         starfield.getName(), life.getName(),  sonic.getName()};
+  static constexpr int N = 9;
+  for (int i = 0; i < N; i++)
+    for (int j = i + 1; j < N; j++)
+      assertNotEqual(strcmp(names[i], names[j]), 0);
 }
 
 test(DisplayModeTest, BeginMethodExists) {
@@ -269,6 +321,29 @@ test(BreakoutModeTest, ScoreEqualsDestroyedBricksWithinFirstClear) {
         alive++;
   int destroyed = total - alive;
   assertEqual(mode.getScore(), destroyed);
+}
+
+test(WeatherModeTest, BeginPreservesLastFetchWhenSynced) {
+  WeatherMode mode;
+  mode.setSynced(true);
+  mode.setLastFetchMs(12345);
+  mode.begin();
+  assertEqual(mode.getLastFetchMs(), (uint32_t)12345);
+}
+
+test(WeatherModeTest, BeginResetsLastFetchWhenNotSynced) {
+  WeatherMode mode;
+  mode.setSynced(false);
+  mode.setLastFetchMs(12345);
+  mode.begin();
+  assertEqual(mode.getLastFetchMs(), (uint32_t)0);
+}
+
+test(WeatherModeTest, BeginPreservesSyncedFlag) {
+  WeatherMode mode;
+  mode.setSynced(true);
+  mode.begin();
+  assertTrue(mode.isSynced());
 }
 
 test(ClockModeTest, DayNamesCount) {

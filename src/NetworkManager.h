@@ -16,6 +16,7 @@
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
+#include "SonicMode.h"
 #include "StarfieldMode.h"
 
 class NetworkManager {
@@ -32,6 +33,7 @@ class NetworkManager {
   ScreensaverMode* screensaverMode;
   StarfieldMode* starfieldMode;
   LifeMode* lifeMode;
+  SonicMode* sonicMode;
 
   bool apMode = false;
   bool apFallbackActive = false;
@@ -234,7 +236,8 @@ class NetworkManager {
             "<a href='/mode?m=breakout'>Breakout</a> | "
             "<a href='/mode?m=pacman'>Pac-Man</a> | "
             "<a href='/mode?m=starfield'>Starfield</a> | "
-            "<a href='/mode?m=life'>Life</a>"
+            "<a href='/mode?m=life'>Life</a> | "
+            "<a href='/mode?m=sonic'>Sonic</a>"
             "</p>"
             "<h3>OLED Configuration</h3>"
             "<p>Try these until border + text align perfectly:</p>"
@@ -289,7 +292,8 @@ class NetworkManager {
         }
         mode.toLowerCase();
         setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
-                      breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode);
+                      breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode,
+                      sonicMode);
       }
 
       http.sendHeader("Location", "/");
@@ -421,13 +425,14 @@ class NetworkManager {
         pacManMode(nullptr),
         screensaverMode(nullptr),
         starfieldMode(nullptr),
-        lifeMode(nullptr) {}
+        lifeMode(nullptr),
+        sonicMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
   void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
                 BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver,
-                StarfieldMode* starfield, LifeMode* life) {
+                StarfieldMode* starfield, LifeMode* life, SonicMode* sonic) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
@@ -437,6 +442,7 @@ class NetworkManager {
     screensaverMode = screensaver;
     starfieldMode = starfield;
     lifeMode = life;
+    sonicMode = sonic;
   }
 
   void begin() {

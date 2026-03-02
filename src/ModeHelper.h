@@ -7,6 +7,7 @@
 #include "LifeMode.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
+#include "SonicMode.h"
 #include "StarfieldMode.h"
 #include "StatusMode.h"
 #include "WeatherMode.h"
@@ -17,7 +18,7 @@ inline bool setModeByName(DisplayManager* displayManager, const String& name,
                           StatusMode* statusMode, BoingMode* boingMode, WeatherMode* weatherMode,
                           ClockMode* clockMode, BreakoutMode* breakoutMode, PacManMode* pacManMode,
                           ScreensaverMode* screensaverMode, StarfieldMode* starfieldMode,
-                          LifeMode* lifeMode) {
+                          LifeMode* lifeMode, SonicMode* sonicMode) {
   if (name == "status" && statusMode) {
     displayManager->setMode(statusMode, 400);  // 2.5 FPS
     return true;
@@ -44,6 +45,9 @@ inline bool setModeByName(DisplayManager* displayManager, const String& name,
     return true;
   } else if (name == "life" && lifeMode) {
     displayManager->setMode(lifeMode, 100);  // 10 FPS — Life evolves slowly
+    return true;
+  } else if (name == "sonic" && sonicMode) {
+    displayManager->setMode(sonicMode, 40);  // 25 FPS
     return true;
   }
   return false;

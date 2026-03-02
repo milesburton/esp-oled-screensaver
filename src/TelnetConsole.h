@@ -9,11 +9,12 @@
 #include "ClockMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
-#include "Logger.h"
 #include "LifeMode.h"
+#include "Logger.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
+#include "SonicMode.h"
 #include "StarfieldMode.h"
 
 class TelnetConsole {
@@ -30,6 +31,7 @@ class TelnetConsole {
   ScreensaverMode* screensaverMode;
   StarfieldMode* starfieldMode;
   LifeMode* lifeMode;
+  SonicMode* sonicMode;
 
   uint32_t lastActivityMs = 0;
   static constexpr uint32_t IDLE_TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes
@@ -42,7 +44,7 @@ class TelnetConsole {
     client.println("  xoff <int>                - Set X offset (-20..20)");
     client.println("  rot 0|1|2|3               - Set rotation (0/90/180/270 deg)");
     client.println(
-        "  mode screensaver|status|boing|weather|clock|breakout|pacman|starfield|life"
+        "  mode screensaver|status|boing|weather|clock|breakout|pacman|starfield|life|sonic"
         " - Switch display mode");
     client.println("  oled on|off               - Enable/disable OLED");
     client.println("  reboot                    - Restart device");
@@ -73,13 +75,14 @@ class TelnetConsole {
         pacManMode(nullptr),
         screensaverMode(nullptr),
         starfieldMode(nullptr),
-        lifeMode(nullptr) {}
+        lifeMode(nullptr),
+        sonicMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
   void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
                 BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver,
-                StarfieldMode* starfield, LifeMode* life) {
+                StarfieldMode* starfield, LifeMode* life, SonicMode* sonic) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
@@ -89,6 +92,7 @@ class TelnetConsole {
     screensaverMode = screensaver;
     starfieldMode = starfield;
     lifeMode = life;
+    sonicMode = sonic;
   }
 
   void begin() {
@@ -186,7 +190,8 @@ class TelnetConsole {
 
       String modeName = cmd.substring(5);
       if (!setModeByName(displayManager, modeName, statusMode, boingMode, weatherMode, clockMode,
-                         breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode)) {
+                         breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode,
+                         sonicMode)) {
         client.println("unknown mode");
         return;
       }

@@ -11,6 +11,7 @@
 #include "NetworkManager.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
+#include "SonicMode.h"
 #include "StarfieldMode.h"
 #include "StatusMode.h"
 #include "TelnetConsole.h"
@@ -28,8 +29,9 @@ BreakoutMode breakoutMode;
 PacManMode pacManMode;
 StarfieldMode starfieldMode;
 LifeMode lifeMode;
+SonicMode sonicMode;
 ScreensaverMode screensaverMode(&clockMode, &boingMode, &weatherMode, &breakoutMode, &pacManMode,
-                                &starfieldMode, &lifeMode);
+                                &starfieldMode, &lifeMode, &sonicMode);
 
 uint32_t lastStatusLog = 0;
 
@@ -44,11 +46,11 @@ void setup() {
 
   networkManager.setDisplayManager(&displayManager);
   networkManager.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
-                          &pacManMode, &screensaverMode, &starfieldMode, &lifeMode);
+                          &pacManMode, &screensaverMode, &starfieldMode, &lifeMode, &sonicMode);
 
   telnetConsole.setDisplayManager(&displayManager);
   telnetConsole.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
-                         &pacManMode, &screensaverMode, &starfieldMode, &lifeMode);
+                         &pacManMode, &screensaverMode, &starfieldMode, &lifeMode, &sonicMode);
 
   networkManager.begin();
   telnetConsole.begin();

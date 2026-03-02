@@ -127,6 +127,15 @@ class WeatherMode : public DisplayMode {
     u8g2->sendBuffer();
   }
 
+#ifdef NATIVE_TEST
+
+ public:
+  bool isSynced() const { return _synced; }
+  uint32_t getLastFetchMs() const { return _lastFetchMs; }
+  void setSynced(bool s) { _synced = s; }
+  void setLastFetchMs(uint32_t t) { _lastFetchMs = t; }
+#endif
+
  public:
   const char* getName() const override { return "weather"; }
 
