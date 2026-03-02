@@ -136,7 +136,7 @@ jobs:
       - name: Create firmware artifact
         run: |
           mkdir -p firmware_artifacts
-          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(python3 scripts/version.py current)
           cp .pio/build/${{ matrix.environment }}/firmware.bin \
              firmware_artifacts/esp8266-oled-experiment_${VERSION}_${{ matrix.environment }}.bin
 

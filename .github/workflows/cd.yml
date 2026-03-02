@@ -77,39 +77,16 @@ jobs:
       - name: Get current version
         id: current_version
         run: |
-          CURRENT=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
+          CURRENT=$(python3 scripts/version.py current)
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
       - name: Calculate new version
         id: version
         run: |
-          CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
 
-          # Parse semantic version
-          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
-          MAJOR="${VERSION_PARTS[0]}"
-          MINOR="${VERSION_PARTS[1]}"
-          PATCH="${VERSION_PARTS[2]}"
-
-          # Increment based on bump type
-          case $BUMP_TYPE in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
-          esac
-
-          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_VERSION=$(python3 scripts/version.py bump "$BUMP_TYPE" --write)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "release_created=true" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
@@ -117,7 +94,6 @@ jobs:
       - name: Update version in Config.h
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
-          sed -i "s/FW_VERSION = \"platform-[^\"]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
           echo "Updated version to platform-${NEW_VERSION}"
 
       - name: Commit version bump

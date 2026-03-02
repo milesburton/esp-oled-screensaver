@@ -39,7 +39,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(python3 scripts/version.py current)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
@@ -81,7 +81,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'FW_VERSION' src/Config.h | grep -oP '"platform-\K[^"]+')
+          VERSION=$(python3 scripts/version.py current)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Prepare release files
