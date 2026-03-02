@@ -299,10 +299,7 @@ class NetworkManager {
       WiFi.hostname(Config::HOSTNAME);
       WiFi.begin(Config::runtimeWiFi.ssid, Config::runtimeWiFi.password);
       Logger::printf("WiFi: connecting to '%s'...", Config::runtimeWiFi.ssid);
-    }
-    // Step 2: Check if compiled credentials exist (non-empty)
-    else if (strlen(Config::WIFI_SSID) > 0) {
-      // Save compiled credentials to EEPROM for future boots
+    } else if (strlen(Config::WIFI_SSID) > 0) {  // Step 2: Check if compiled credentials exist (non-empty)
       Logger::println("WiFi: saving compiled credentials to EEPROM");
       CredentialsManager::saveCredentials(Config::WIFI_SSID, Config::WIFI_PASS);
 
@@ -311,9 +308,7 @@ class NetworkManager {
       WiFi.hostname(Config::HOSTNAME);
       WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
       Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
-    }
-    // Step 3: No credentials - start AP mode for setup
-    else {
+    } else {  // Step 3: No credentials - start AP mode for setup
       Logger::println("WiFi: no credentials found, starting AP mode");
       apMode = true;
       WiFi.mode(WIFI_AP);
