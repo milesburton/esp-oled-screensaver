@@ -89,97 +89,98 @@ jobs:
           echo "new_tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "New version: ${NEW_VERSION}"
 
-      - name: Check if version already released
-        id: check-tag
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio==${{ env.PLATFORMIO_VERSION }}
+
+      - name: Prepare secrets file for CI build
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+          echo "Using CI secrets file for build"
+
+      - name: Build firmware for D1 Mini
+        run: |
+          rm -rf .pio build
+          pio run -e esp8266_d1_mini
+
+      - name: Build firmware for NodeMCU
+        run: |
+          pio run -e esp8266_nodmcu
+
+      - name: Build firmware for Generic ESP8266
+        run: |
+          pio run -e esp8266_generic
+
+      - name: Build successful - check for duplicate tag
+        id: check-tag-after-build
         run: |
           TAG="${{ steps.new-version.outputs.new_tag }}"
+          FINAL_VERSION="${{ steps.new-version.outputs.new }}"
+          FINAL_TAG="$TAG"
+          
+          # If tag already exists, increment patch version and use new tag
           if git rev-parse "$TAG" 2>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG already exists - skipping release"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag $TAG is new - proceeding with release"
+            echo "Tag $TAG already exists - bumping patch version again"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
+            PATCH=$((PATCH + 1))
+            FINAL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            FINAL_TAG="v${FINAL_VERSION}"
+            echo "Bumped to: $FINAL_VERSION"
           fi
+          
+          echo "final_version=${FINAL_VERSION}" >> $GITHUB_OUTPUT
+          echo "final_tag=${FINAL_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Update firmware version in Config.h
-        if: steps.check-tag.outputs.exists == 'false'
+      - name: Update firmware version in Config.h (after successful build)
         run: |
-          NEW_VERSION="${{ steps.new-version.outputs.new }}"
-          sed -i "s/FW_VERSION = \"platform-[0-9.]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
-          echo "Updated Config.h to version ${NEW_VERSION}"
+          FINAL_VERSION="${{ steps.check-tag-after-build.outputs.final_version }}"
+          sed -i "s/FW_VERSION = \"platform-[0-9.]*\"/FW_VERSION = \"platform-${FINAL_VERSION}\"/" src/Config.h
+          echo "Updated Config.h to version ${FINAL_VERSION}"
           grep 'FW_VERSION' src/Config.h
 
-      - name: Commit version bump
-        if: steps.check-tag.outputs.exists == 'false'
+      - name: Copy binaries to release folder
         run: |
+          mkdir -p release
+          FINAL_TAG="${{ steps.check-tag-after-build.outputs.final_tag }}"
+          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_d1_mini.bin
+          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_nodmcu.bin
+          cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_generic.bin
+          ls -lh release/*.bin
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd release
+          FINAL_TAG="${{ steps.check-tag-after-build.outputs.final_tag }}"
+          for file in esp8266-oled-experiment_${FINAL_TAG}_*.bin; do
+            sha256sum "$file" > "${file}.sha256"
+            cat "${file}.sha256"
+          done
+
+      - name: Commit version bump (only after successful build)
+        run: |
+          FINAL_VERSION="${{ steps.check-tag-after-build.outputs.final_version }}"
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add src/Config.h
           if git diff --cached --quiet; then
             echo "No version changes to commit"
           else
-            git commit -m "chore: bump version to ${{ steps.new-version.outputs.new }}"
+            git commit -m "chore: bump version to ${FINAL_VERSION}"
             git pull --rebase origin main || true
-            git push origin main || echo "Push failed - continuing with build anyway"
+            git push origin main
           fi
-
-      - name: Set up Python
-        if: steps.check-tag.outputs.exists == 'false'
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install PlatformIO
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          python -m pip install --upgrade pip
-          pip install platformio==${{ env.PLATFORMIO_VERSION }}
-
-      - name: Prepare secrets file for CI build
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          cp src/secrets.h.ci src/secrets.h
-          echo "Using CI secrets file for build"
-
-      - name: Build firmware for D1 Mini
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          rm -rf .pio build
-          pio run -e esp8266_d1_mini
-
-      - name: Build firmware for NodeMCU
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          pio run -e esp8266_nodmcu
-
-      - name: Build firmware for Generic ESP8266
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          pio run -e esp8266_generic
-
-      - name: Copy binaries to release folder
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          mkdir -p release
-          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_d1_mini.bin
-          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_nodmcu.bin
-          cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_generic.bin
-          ls -lh release/*.bin
-
-      - name: Generate SHA256 checksums
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          cd release
-          for file in esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.bin; do
-            sha256sum "$file" > "${file}.sha256"
-            cat "${file}.sha256"
-          done
 
       - name: Generate release notes
         id: generate-notes
-        if: steps.check-tag.outputs.exists == 'false'
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          FINAL_TAG="${{ steps.check-tag-after-build.outputs.final_tag }}"
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | grep -v "${FINAL_TAG}" || echo "")
           if [ -z "$LAST_TAG" ]; then
             COMMIT_LOG=$(git log --pretty=format:"- %h: %s")
           else
@@ -187,9 +188,9 @@ jobs:
           fi
           
           NOTES=$(cat <<EOF
-          ## Firmware Release ${{ steps.new-version.outputs.new_tag }}
+          ## Firmware Release ${{ steps.check-tag-after-build.outputs.final_tag }}
           
-          ### Version: ${{ steps.new-version.outputs.new }} (${{ steps.bump-type.outputs.bump }} bump)
+          ### Version: ${{ steps.check-tag-after-build.outputs.final_version }} (${{ steps.bump-type.outputs.bump }} bump)
           
           ### Changes
           \`\`\`
@@ -202,7 +203,7 @@ jobs:
           - **Generic** (ESP8266 generic/esp12e) - 1MB Flash
           
           ### Firmware Features
-          - Modular display mode system (Status, Boing, Weather)
+          - Modular display mode system (Clock, Breakout, Pac-Man, Status, Weather)
           - WiFi connectivity with OTA updates
           - RESTful web interface for configuration
           - Telnet console for remote debugging
@@ -225,7 +226,6 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload build artifacts
-        if: steps.check-tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: firmware-binaries
@@ -233,15 +233,14 @@ jobs:
           retention-days: 30
 
       - name: Create Release
-        if: steps.check-tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.new-version.outputs.new_tag }}
-          name: "Firmware ${{ steps.new-version.outputs.new_tag }}"
+          tag_name: ${{ steps.check-tag-after-build.outputs.final_tag }}
+          name: "Firmware ${{ steps.check-tag-after-build.outputs.final_tag }}"
           body: ${{ steps.generate-notes.outputs.notes }}
           files: |
-            release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.bin
-            release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.sha256
+            release/esp8266-oled-experiment_${{ steps.check-tag-after-build.outputs.final_tag }}_*.bin
+            release/esp8266-oled-experiment_${{ steps.check-tag-after-build.outputs.final_tag }}_*.sha256
           draft: false
           prerelease: false
         env:
@@ -252,14 +251,9 @@ jobs:
         run: |
           echo "## Build Status Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.check-tag.outputs.exists }}" = "true" ]; then
-            echo "✅ **Version already released**: Tag ${{ steps.new-version.outputs.new_tag }} exists" >> $GITHUB_STEP_SUMMARY
-            echo "No new release created." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ **New firmware release**: ${{ steps.new-version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
-            echo "- Version bumped: ${{ steps.current-version.outputs.current }} → ${{ steps.new-version.outputs.new }} (${{ steps.bump-type.outputs.bump }})" >> $GITHUB_STEP_SUMMARY
-            echo "- D1 Mini binary created ✓" >> $GITHUB_STEP_SUMMARY
-            echo "- NodeMCU binary created ✓" >> $GITHUB_STEP_SUMMARY
-            echo "- Generic binary created ✓" >> $GITHUB_STEP_SUMMARY
-            echo "- Release published to GitHub ✓" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "✅ **New firmware release**: ${{ steps.check-tag-after-build.outputs.final_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.check-tag-after-build.outputs.final_version }} (${{ steps.bump-type.outputs.bump }} bump)" >> $GITHUB_STEP_SUMMARY
+          echo "- D1 Mini binary created ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- NodeMCU binary created ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- Generic binary created ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- Release published to GitHub ✓" >> $GITHUB_STEP_SUMMARY
