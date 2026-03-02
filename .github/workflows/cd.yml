@@ -1,11 +1,14 @@
 name: Continuous Deployment
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version_bump:
         description: 'Version bump type'
-        required: true
+        required: false
         default: 'patch'
         type: choice
         options:
