@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
+
+concurrency:
+  group: firmware-release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -18,7 +23,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get-version.outputs.version }}
+      version: ${{ steps.check-tag-after-build.outputs.final_version }}
+      tag: ${{ steps.check-tag-after-build.outputs.final_tag }}
       release_notes: ${{ steps.generate-notes.outputs.notes }}
     
     steps:
@@ -153,6 +159,14 @@ jobs:
           cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_generic.bin
           ls -lh release/*.bin
 
+      - name: Verify all binary outputs exist
+        run: |
+          FINAL_TAG="${{ steps.check-tag-after-build.outputs.final_tag }}"
+          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_d1_mini.bin"
+          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_nodmcu.bin"
+          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_generic.bin"
+          echo "All expected firmware binaries are present"
+
       - name: Generate SHA256 checksums
         run: |
           cd release
@@ -230,7 +244,7 @@ jobs:
         with:
           name: firmware-binaries
           path: release/
-          retention-days: 30
+          retention-days: 7
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

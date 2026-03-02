@@ -1,0 +1,91 @@
+name: Cleanup Old Builds
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+env:
+  ARTIFACT_RETENTION_DAYS: 14
+  KEEP_RELEASES: 12
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete expired workflow artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const cutoff = Date.now() - (Number(process.env.ARTIFACT_RETENTION_DAYS) * 24 * 60 * 60 * 1000);
+
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner,
+              repo,
+              per_page: 100
+            });
+
+            let deleted = 0;
+            for (const artifact of artifacts) {
+              const created = new Date(artifact.created_at).getTime();
+              if (created < cutoff) {
+                await github.rest.actions.deleteArtifact({
+                  owner,
+                  repo,
+                  artifact_id: artifact.id
+                });
+                deleted += 1;
+              }
+            }
+
+            core.info(`Deleted ${deleted} workflow artifacts older than ${process.env.ARTIFACT_RETENTION_DAYS} days.`);
+
+      - name: Delete old releases and tags
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const keep = Number(process.env.KEEP_RELEASES);
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100
+            });
+
+            const stableReleases = releases
+              .filter(r => !r.draft && !r.prerelease)
+              .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+
+            const toDelete = stableReleases.slice(keep);
+            let deletedReleases = 0;
+            let deletedTags = 0;
+
+            for (const release of toDelete) {
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.id
+              });
+              deletedReleases += 1;
+
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `tags/${release.tag_name}`
+                });
+                deletedTags += 1;
+              } catch (error) {
+                core.warning(`Could not delete tag ${release.tag_name}: ${error.message}`);
+              }
+            }
+
+            core.info(`Deleted ${deletedReleases} old releases and ${deletedTags} tags. Kept latest ${keep} stable releases.`);

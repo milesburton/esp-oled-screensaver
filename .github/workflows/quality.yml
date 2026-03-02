@@ -145,4 +145,4 @@ jobs:
         with:
           name: firmware-${{ matrix.environment }}
           path: firmware_artifacts/
-          retention-days: 30
+          retention-days: 7
