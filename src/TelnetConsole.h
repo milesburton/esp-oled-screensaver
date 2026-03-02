@@ -5,10 +5,13 @@
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 
+#include "BreakoutMode.h"
+#include "ClockMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "ModeHelper.h"
+#include "PacManMode.h"
 
 class TelnetConsole {
  private:
@@ -18,6 +21,9 @@ class TelnetConsole {
   StatusMode* statusMode;
   BoingMode* boingMode;
   WeatherMode* weatherMode;
+  ClockMode* clockMode;
+  BreakoutMode* breakoutMode;
+  PacManMode* pacManMode;
 
   uint32_t lastActivityMs = 0;
   static constexpr uint32_t IDLE_TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes
@@ -29,7 +35,7 @@ class TelnetConsole {
     client.println("  drv ssd1306|sh1106        - Set OLED driver");
     client.println("  xoff <int>                - Set X offset (-20..20)");
     client.println("  rot 0|1|2|3               - Set rotation (0/90/180/270 deg)");
-    client.println("  mode status|boing|weather - Switch display mode");
+    client.println("  mode status|boing|weather|clock|breakout|pacman - Switch display mode");
     client.println("  oled on|off               - Enable/disable OLED");
     client.println("  reboot                    - Restart device");
   }
@@ -53,14 +59,21 @@ class TelnetConsole {
         displayManager(nullptr),
         statusMode(nullptr),
         boingMode(nullptr),
-        weatherMode(nullptr) {}
+        weatherMode(nullptr),
+        clockMode(nullptr),
+        breakoutMode(nullptr),
+        pacManMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
-  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather) {
+  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
+                BreakoutMode* breakout, PacManMode* pacman) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
+    clockMode = clock;
+    breakoutMode = breakout;
+    pacManMode = pacman;
   }
 
   void begin() {
@@ -157,7 +170,8 @@ class TelnetConsole {
       }
 
       String modeName = cmd.substring(5);
-      if (!setModeByName(displayManager, modeName, statusMode, boingMode, weatherMode)) {
+      if (!setModeByName(displayManager, modeName, statusMode, boingMode, weatherMode, clockMode,
+                         breakoutMode, pacManMode)) {
         client.println("unknown mode");
         return;
       }

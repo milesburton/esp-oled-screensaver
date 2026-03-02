@@ -20,6 +20,10 @@ firmware/
 # Test artifacts
 test_output/
 *.test
+*.log
+
+# Release artifacts (generated binaries and checksums)
+release/
 
 # Python (pre-commit)
 venv/

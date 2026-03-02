@@ -4,7 +4,7 @@
 
 | Situation | Action |
 |-----------|--------|
-| **New device** | Connect to `esp-oled-setup` AP (pwd: `setup1234`), go to `http://192.168.4.1/` |
+| **New device** | Connect to `ESP-OLED-Setup` AP (open, no password), go to `http://192.168.4.1/` |
 | **Lost WiFi** | Same as above OR reflash with `./build.sh esp8266_d1_mini` |
 | **No AP visible** | Use serial programmer (see Option 3) |
 | **Stuck in bootloop** | Erase flash with esptool: `esptool.py -p /dev/ttyUSB0 erase_flash` |
@@ -20,16 +20,16 @@ If your device appears offline and you can't access the web interface, follow th
 If the device was flashed with a pre-built release binary without WiFi credentials:
 
 1. **Find the device's access point**:
-   - Look for a WiFi network named: `esp-oled-setup`
-   - Password: `setup1234`
+   - Look for a WiFi network named: `ESP-OLED-Setup`
+   - No password — open network
 
 2. **Connect to the AP**:
 
    ```bash
    # macOS/Linux
-   wifi connect esp-oled-setup
+   wifi connect ESP-OLED-Setup
 
-   # Windows: Use WiFi settings to connect to esp-oled-setup
+   # Windows: Use WiFi settings to connect to ESP-OLED-Setup
    ```
 
 3. **Open web interface**:
@@ -281,7 +281,7 @@ esptool.py version  # Will list available ports
 7. **Reset device**:
    - Press RST button or cycle power
    - Device will boot with new firmware
-   - Should start AP mode: `esp-oled-setup`
+   - Should start AP mode: `ESP-OLED-Setup`
 
 #### Complete Flash Erase (if needed)
 

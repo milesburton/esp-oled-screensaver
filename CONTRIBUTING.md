@@ -74,20 +74,11 @@ public:
 };
 ```
 
-2. Register in `src/OA_OLED_Display_with_wifi_working.ino`:
+2. Register in `src/ESP8266-OLED-Experiment.ino` and add to `setModeByName` in `src/ModeHelper.h`, `setModes` in `src/NetworkManager.h` and `src/TelnetConsole.h`.
 
-```cpp
-#include "MyMode.h"
-MyMode myMode;
+3. Add tests in `test/test_DisplayModes/test_main.cpp`
 
-// In setup()
-networkManager.setModes(&statusMode, &boingMode, &myMode);
-telnetConsole.setModes(&statusMode, &boingMode, &myMode);
-```
-
-3. Add test in `test/unit/test_MyMode/test_MyMode.ino`
-
-4. Update README.md with features
+4. Update README.md with the new mode
 
 ## Pull Requests
 

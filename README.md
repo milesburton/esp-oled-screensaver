@@ -20,8 +20,11 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 **Display Modes** (Extensible)
 
 - Status: Device info, IP address, firmware version
-- Boing: Animated bouncing ball with rotation and physics
-- Weather: Placeholder for weather API integration
+- Boing: Animated bouncing ball with physics and rotation
+- Weather: Live temperature via Open-Meteo API
+- Clock: NTP-synced digital clock with date
+- Breakout: Self-playing brick breaker with AI paddle
+- Pac-Man: Self-playing maze demo with ghost AI
 
 **Development**
 
@@ -114,7 +117,7 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 
 - `help` - Command list
 - `status` - Device status
-- `mode status|boing|weather` - Switch display mode
+- `mode status|boing|weather|clock|breakout|pacman` - Switch display mode
 - `drv ssd1306|sh1106` - Set OLED driver
 - `xoff <int>` - Set X offset (e.g., `xoff 0`)
 - `oled on|off` - Enable/disable display
@@ -130,23 +133,26 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 
 ```
 src/
-├── OA_OLED_Display_with_wifi_working.ino  # Main sketch (~60 lines)
-├── Config.h / Config.cpp                  # Configuration & constants
-├── Logger.h                               # Unified logging
-├── DisplayManager.h                       # OLED management
-├── NetworkManager.h                       # WiFi & HTTP server
-├── TelnetConsole.h                        # Remote console
-├── DisplayMode.h                          # Mode base class
-├── StatusMode.h                           # Status display
-├── BoingMode.h                            # Animation demo
-└── WeatherMode.h                          # Weather placeholder
+├── ESP8266-OLED-Experiment.ino  # Main sketch
+├── Config.h / Config.cpp        # Configuration & constants
+├── Logger.h                     # Unified logging
+├── DisplayManager.h             # OLED management
+├── NetworkManager.h             # WiFi & HTTP server
+├── TelnetConsole.h              # Remote console
+├── ModeHelper.h                 # Mode switching
+├── DisplayMode.h                # Mode base class
+├── StatusMode.h                 # Device info display
+├── BoingMode.h                  # Bouncing ball animation
+├── WeatherMode.h                # Live weather via Open-Meteo
+├── ClockMode.h                  # NTP-synced clock
+├── BreakoutMode.h               # Self-playing brick breaker
+└── PacManMode.h                 # Self-playing Pac-Man demo
 
 test/
-├── unit/                                  # AUnit tests
-│   ├── test_Config/
-│   ├── test_Logger/
-│   └── test_DisplayModes/
-└── integration/                           # Coming soon
+├── test_Config/
+├── test_Logger/
+├── test_DisplayModes/
+└── integration/
 ```
 
 ### Core Components
@@ -225,8 +231,10 @@ Runtime configuration via web interface or Telnet console:
 ## Performance
 
 - Main loop: ~1ms cycle time
-- Boing mode: ~25 FPS
-- Status mode: ~2.5 FPS
+- Boing / Breakout / Pac-Man: 25 FPS
+- Clock: 2 FPS
+- Status: 2.5 FPS
+- Weather: 0.2 FPS (fetch-driven, 10-minute interval)
 - WiFi status: logged every second
 
 ## References

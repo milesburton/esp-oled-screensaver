@@ -2,10 +2,13 @@
 // Wiring: SDA=GPIO0, SCL=GPIO2, I2C addr=0x3C
 
 #include "BoingMode.h"
+#include "BreakoutMode.h"
+#include "ClockMode.h"
 #include "Config.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "NetworkManager.h"
+#include "PacManMode.h"
 #include "StatusMode.h"
 #include "TelnetConsole.h"
 #include "WeatherMode.h"
@@ -17,6 +20,9 @@ TelnetConsole telnetConsole;
 StatusMode statusMode;
 BoingMode boingMode;
 WeatherMode weatherMode;
+ClockMode clockMode;
+BreakoutMode breakoutMode;
+PacManMode pacManMode;
 
 uint32_t lastStatusLog = 0;
 
@@ -30,10 +36,12 @@ void setup() {
   displayManager.begin();
 
   networkManager.setDisplayManager(&displayManager);
-  networkManager.setModes(&statusMode, &boingMode, &weatherMode);
+  networkManager.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
+                          &pacManMode);
 
   telnetConsole.setDisplayManager(&displayManager);
-  telnetConsole.setModes(&statusMode, &boingMode, &weatherMode);
+  telnetConsole.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
+                         &pacManMode);
 
   networkManager.begin();
   telnetConsole.begin();

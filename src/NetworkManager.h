@@ -1,16 +1,19 @@
 #pragma once
 
-#include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 
+#include <DNSServer.h>
 #include <ElegantOTA.h>
 
+#include "BreakoutMode.h"
+#include "ClockMode.h"
 #include "Config.h"
 #include "CredentialsManager.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "ModeHelper.h"
+#include "PacManMode.h"
 
 class NetworkManager {
  private:
@@ -20,6 +23,9 @@ class NetworkManager {
   StatusMode* statusMode;
   BoingMode* boingMode;
   WeatherMode* weatherMode;
+  ClockMode* clockMode;
+  BreakoutMode* breakoutMode;
+  PacManMode* pacManMode;
 
   bool apMode = false;
   bool apFallbackActive = false;
@@ -71,10 +77,10 @@ class NetworkManager {
 
     apMode = true;
     WiFi.softAP(AP_SSID, AP_PASS);
-    
+
     // Start DNS server for captive portal (redirect all domains to this device)
     dnsServer.start(53, "*", WiFi.softAPIP());
-    
+
     Logger::printf("WiFi: captive portal active — SSID='%s' (open) ip=%s mode=%s", AP_SSID,
                    WiFi.softAPIP().toString().c_str(),
                    fallbackFromSta ? "AP+STA fallback" : "AP only");
@@ -111,9 +117,9 @@ class NetworkManager {
       http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
       http.send(302, "text/plain", "");
     });
-    
+
     // Root page
-     http.on("/", HTTP_GET, [this]() {
+    http.on("/", HTTP_GET, [this]() {
       // If in AP mode, redirect to WiFi setup
       if (apMode) {
         http.sendHeader("Location", "/wifi");
@@ -161,12 +167,12 @@ class NetworkManager {
       http.sendContent(String(Config::OLED_ADDR, HEX));
       http.sendContent(F("</li></ul>"));
       http.sendContent(F("<h3>Diagnostics</h3><ul>"));
-      
+
       bool credLoaded = CredentialsManager::hasValidCredentials();
       http.sendContent(F("<li><b>WiFi Creds:</b> "));
       http.sendContent(credLoaded ? "EEPROM" : "Compiled");
       http.sendContent(F("</li>"));
-      
+
       uint32_t freeHeap = ESP.getFreeHeap();
       uint32_t totalHeap = 81920;  // ESP8266 has 80KB total heap
       uint8_t heapAvail = (freeHeap * 100) / totalHeap;
@@ -175,14 +181,14 @@ class NetworkManager {
       http.sendContent(F("B ("));
       http.sendContent(String(heapAvail));
       http.sendContent(F("%)</li>"));
-      
+
       uint32_t maxBlock = ESP.getMaxFreeBlockSize();
       if (maxBlock > 0) {
         http.sendContent(F("<li><b>Max Block:</b> "));
         http.sendContent(String(maxBlock));
         http.sendContent(F("B</li>"));
       }
-      
+
       uint32_t flashSize = ESP.getFlashChipSize();
       uint32_t sketchSize = ESP.getSketchSize();
       uint8_t flashUsed = (sketchSize * 100) / flashSize;
@@ -191,7 +197,7 @@ class NetworkManager {
       http.sendContent(F("B ("));
       http.sendContent(String(flashUsed));
       http.sendContent(F("%)</li>"));
-      
+
       http.sendContent(F("<li><b>EEPROM:</b> "));
       http.sendContent(String(CredentialsManager::EEPROM_SIZE));
       if (credLoaded) {
@@ -199,14 +205,14 @@ class NetworkManager {
       } else {
         http.sendContent(F("B</li>"));
       }
-      
+
       uint16_t vcc = ESP.getVcc();
       if (vcc > 0) {
         http.sendContent(F("<li><b>Power:</b> "));
         http.sendContent(String(vcc));
         http.sendContent(F("mV</li>"));
       }
-      
+
       http.sendContent(F("</ul>"));
 
       http.sendContent(
@@ -216,7 +222,10 @@ class NetworkManager {
             "<p>"
             "<a href='/mode?m=status'>Status</a> | "
             "<a href='/mode?m=boing'>Boing</a> | "
-            "<a href='/mode?m=weather'>Weather</a>"
+            "<a href='/mode?m=weather'>Weather</a> | "
+            "<a href='/mode?m=clock'>Clock</a> | "
+            "<a href='/mode?m=breakout'>Breakout</a> | "
+            "<a href='/mode?m=pacman'>Pac-Man</a>"
             "</p>"
             "<h3>OLED Configuration</h3>"
             "<p>Try these until border + text align perfectly:</p>"
@@ -270,7 +279,8 @@ class NetworkManager {
           return;
         }
         mode.toLowerCase();
-        setModeByName(displayManager, mode, statusMode, boingMode, weatherMode);
+        setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
+                      breakoutMode, pacManMode);
       }
 
       http.sendHeader("Location", "/");
@@ -337,7 +347,9 @@ class NetworkManager {
     http.on("/wifi", HTTP_GET, [this]() {
       String html;
       html.reserve(900);
-      html += "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>";
+      html +=
+          "<!doctype html><html><head><meta name='viewport' "
+          "content='width=device-width,initial-scale=1'>";
       html += "<title>WiFi Setup</title></head><body>";
       html += "<h2>WiFi Setup</h2>";
       html += "<form method='POST' action='/save-wifi'>";
@@ -394,14 +406,21 @@ class NetworkManager {
         displayManager(nullptr),
         statusMode(nullptr),
         boingMode(nullptr),
-        weatherMode(nullptr) {}
+        weatherMode(nullptr),
+        clockMode(nullptr),
+        breakoutMode(nullptr),
+        pacManMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
-  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather) {
+  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
+                BreakoutMode* breakout, PacManMode* pacman) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
+    clockMode = clock;
+    breakoutMode = breakout;
+    pacManMode = pacman;
   }
 
   void begin() {
@@ -440,7 +459,7 @@ class NetworkManager {
   void update() {
     http.handleClient();
     ElegantOTA.loop();
-    
+
     // Process DNS requests in AP mode for captive portal (wildcard redirect)
     if (apMode) {
       dnsServer.processNextRequest();

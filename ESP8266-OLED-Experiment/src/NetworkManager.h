@@ -3,24 +3,43 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 
+#include <DNSServer.h>
 #include <ElegantOTA.h>
 
+#include "BreakoutMode.h"
+#include "ClockMode.h"
 #include "Config.h"
+#include "CredentialsManager.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "ModeHelper.h"
+#include "PacManMode.h"
 
 class NetworkManager {
  private:
   ESP8266WebServer http;
+  DNSServer dnsServer;
   DisplayManager* displayManager;
   StatusMode* statusMode;
   BoingMode* boingMode;
   WeatherMode* weatherMode;
+  ClockMode* clockMode;
+  BreakoutMode* breakoutMode;
+  PacManMode* pacManMode;
+
+  bool apMode = false;
+  bool apFallbackActive = false;
+  static constexpr const char* AP_SSID = "ESP-OLED-Setup";
+  static constexpr const char* AP_PASS = "";  // Open network for captive portal
 
   uint32_t wifiRetryMs = 0;
   uint32_t wifiRetryIntervalMs = 5000;
   static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;
+  uint32_t disconnectedStartMs = 0;
+  static constexpr uint32_t AP_FALLBACK_TIMEOUT_MS = 60 * 1000;
+
+  char activeSsid[32] = {0};
+  char activePass[64] = {0};
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -43,69 +62,188 @@ class NetworkManager {
     }
   }
 
-  void setupRoutes() {
-    http.on("/", HTTP_GET, [this]() {
-      String html;
-      html.reserve(2000);
+  void startSetupAP(bool fallbackFromSta) {
+    if (apMode) {
+      return;
+    }
 
-      html += "<h1>" + String(Config::HOSTNAME) + "</h1>";
-      html += "<p><b>FW:</b> " + String(Config::FW_VERSION) + "</p>";
-      html += "<ul>";
-      html += "<li><b>WiFi:</b> " + String(wlStatusName(WiFi.status())) + "</li>";
-      html += "<li><b>IP:</b> " + WiFi.localIP().toString() + "</li>";
-      html +=
-          "<li><b>RSSI:</b> " + String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) + "</li>";
-      html += "<li><b>Heap:</b> " + String(ESP.getFreeHeap()) + "</li>";
+    if (fallbackFromSta) {
+      WiFi.mode(WIFI_AP_STA);
+      apFallbackActive = true;
+    } else {
+      WiFi.mode(WIFI_AP);
+      apFallbackActive = false;
+    }
+
+    apMode = true;
+    WiFi.softAP(AP_SSID, AP_PASS);
+
+    // Start DNS server for captive portal (redirect all domains to this device)
+    dnsServer.start(53, "*", WiFi.softAPIP());
+
+    Logger::printf("WiFi: captive portal active — SSID='%s' (open) ip=%s mode=%s", AP_SSID,
+                   WiFi.softAPIP().toString().c_str(),
+                   fallbackFromSta ? "AP+STA fallback" : "AP only");
+  }
+
+  void stopFallbackAPIfConnected() {
+    if (!apFallbackActive) {
+      return;
+    }
+
+    dnsServer.stop();
+    WiFi.softAPdisconnect(true);
+    apMode = false;
+    apFallbackActive = false;
+    disconnectedStartMs = 0;
+    Logger::println("WiFi: connected, captive portal disabled");
+  }
+
+  void setupRoutes() {
+    // Captive portal detection routes (for iOS, Android, Windows)
+    http.on("/generate_204", HTTP_GET, [this]() {  // Android
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/hotspot-detect.html", HTTP_GET, [this]() {  // iOS/macOS
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/connecttest.txt", HTTP_GET, [this]() {  // Windows
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/redirect", HTTP_GET, [this]() {  // Windows
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+
+    // Root page
+    http.on("/", HTTP_GET, [this]() {
+      // If in AP mode, redirect to WiFi setup
+      if (apMode) {
+        http.sendHeader("Location", "/wifi");
+        http.send(302, "text/plain", "");
+        return;
+      }
+      http.setContentLength(CONTENT_LENGTH_UNKNOWN);
+      http.send(200, F("text/html; charset=utf-8"), "");
+
+      http.sendContent(F("<h1>"));
+      http.sendContent(Config::HOSTNAME);
+      http.sendContent(F("</h1><p><b>FW:</b> "));
+      http.sendContent(Config::FW_VERSION);
+      http.sendContent(F("</p><ul>"));
+
+      http.sendContent(F("<li><b>WiFi:</b> "));
+      http.sendContent(wlStatusName(WiFi.status()));
+      http.sendContent(F("</li><li><b>IP:</b> "));
+      http.sendContent(WiFi.localIP().toString());
+      http.sendContent(F("</li><li><b>RSSI:</b> "));
+      http.sendContent(String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0));
+      http.sendContent(F("</li><li><b>Heap:</b> "));
+      http.sendContent(String(ESP.getFreeHeap()));
+      http.sendContent(F("</li>"));
 
       if (displayManager && displayManager->getCurrentMode()) {
-        html += "<li><b>Mode:</b> " + String(displayManager->getCurrentMode()->getName()) + "</li>";
+        http.sendContent(F("<li><b>Mode:</b> "));
+        http.sendContent(displayManager->getCurrentMode()->getName());
+        http.sendContent(F("</li>"));
       }
 
-      html += "<li><b>OLED:</b> " + String(Config::runtime.oledEnabled ? "on" : "off") + "</li>";
-      html += "<li><b>Driver:</b> " + String(Config::runtime.getDriverName()) + "</li>";
-      html += "<li><b>Rotation:</b> " + String(Config::runtime.getRotationName()) + "</li>";
-      html += "<li><b>X offset:</b> " + String(Config::runtime.xOffset) + "</li>";
-      html += "<li><b>I2C:</b> SDA=" + String(Config::OLED_SDA) +
-              " SCL=" + String(Config::OLED_SCL) + " addr=0x" + String(Config::OLED_ADDR, HEX) +
-              "</li>";
-      html += "</ul>";
+      http.sendContent(F("<li><b>OLED:</b> "));
+      http.sendContent(Config::runtime.oledEnabled ? "on" : "off");
+      http.sendContent(F("</li><li><b>Driver:</b> "));
+      http.sendContent(Config::runtime.getDriverName());
+      http.sendContent(F("</li><li><b>Rotation:</b> "));
+      http.sendContent(Config::runtime.getRotationName());
+      http.sendContent(F("</li><li><b>X offset:</b> "));
+      http.sendContent(String(Config::runtime.xOffset));
+      http.sendContent(F("</li><li><b>I2C:</b> SDA="));
+      http.sendContent(String(Config::OLED_SDA));
+      http.sendContent(F(" SCL="));
+      http.sendContent(String(Config::OLED_SCL));
+      http.sendContent(F(" addr=0x"));
+      http.sendContent(String(Config::OLED_ADDR, HEX));
+      http.sendContent(F("</li></ul>"));
+      http.sendContent(F("<h3>Diagnostics</h3><ul>"));
 
-      html += "<p><a href='/update'>OTA Update</a></p>";
+      bool credLoaded = CredentialsManager::hasValidCredentials();
+      http.sendContent(F("<li><b>WiFi Creds:</b> "));
+      http.sendContent(credLoaded ? "EEPROM" : "Compiled");
+      http.sendContent(F("</li>"));
 
-      html += "<h3>Display Mode</h3>";
-      html += "<p>";
-      html += "<a href='/mode?m=status'>Status</a> | ";
-      html += "<a href='/mode?m=boing'>Boing</a> | ";
-      html += "<a href='/mode?m=weather'>Weather</a>";
-      html += "</p>";
+      uint32_t freeHeap = ESP.getFreeHeap();
+      uint32_t totalHeap = 81920;  // ESP8266 has 80KB total heap
+      uint8_t heapAvail = (freeHeap * 100) / totalHeap;
+      http.sendContent(F("<li><b>RAM Free:</b> "));
+      http.sendContent(String(freeHeap));
+      http.sendContent(F("B ("));
+      http.sendContent(String(heapAvail));
+      http.sendContent(F("%)</li>"));
 
-      html += "<h3>OLED Configuration</h3>";
-      html += "<p>Try these until border + text align perfectly:</p>";
-      html += "<ul>";
-      html +=
-          "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 "
-          "(common)</a></li>";
-      html += "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>";
-      html +=
-          "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 "
-          "(common)</a></li>";
-      html += "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>";
-      html += "</ul>";
-      html +=
-          "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED "
-          "OFF</a></p>";
+      uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+      if (maxBlock > 0) {
+        http.sendContent(F("<li><b>Max Block:</b> "));
+        http.sendContent(String(maxBlock));
+        http.sendContent(F("B</li>"));
+      }
 
-      html += "<h3>Display Rotation</h3>";
-      html += "<p>";
-      html += "<a href='/rotation?rot=0'>0°</a> | ";
-      html += "<a href='/rotation?rot=1'>90°</a> | ";
-      html += "<a href='/rotation?rot=2'>180°</a> | ";
-      html += "<a href='/rotation?rot=3'>270°</a>";
-      html += "</p>";
+      uint32_t flashSize = ESP.getFlashChipSize();
+      uint32_t sketchSize = ESP.getSketchSize();
+      uint8_t flashUsed = (sketchSize * 100) / flashSize;
+      http.sendContent(F("<li><b>Flash:</b> "));
+      http.sendContent(String(sketchSize));
+      http.sendContent(F("B ("));
+      http.sendContent(String(flashUsed));
+      http.sendContent(F("%)</li>"));
 
-      html += "<p><i>Telnet console on port 23</i></p>";
+      http.sendContent(F("<li><b>EEPROM:</b> "));
+      http.sendContent(String(CredentialsManager::EEPROM_SIZE));
+      if (credLoaded) {
+        http.sendContent(F("B (97B used)</li>"));
+      } else {
+        http.sendContent(F("B</li>"));
+      }
 
-      http.send(200, "text/html", html);
+      uint16_t vcc = ESP.getVcc();
+      if (vcc > 0) {
+        http.sendContent(F("<li><b>Power:</b> "));
+        http.sendContent(String(vcc));
+        http.sendContent(F("mV</li>"));
+      }
+
+      http.sendContent(F("</ul>"));
+
+      http.sendContent(
+          F("<p><a href='/update'>OTA Update</a></p>"
+            "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
+            "<h3>Display Mode</h3>"
+            "<p>"
+            "<a href='/mode?m=status'>Status</a> | "
+            "<a href='/mode?m=boing'>Boing</a> | "
+            "<a href='/mode?m=weather'>Weather</a> | "
+            "<a href='/mode?m=clock'>Clock</a> | "
+            "<a href='/mode?m=breakout'>Breakout</a> | "
+            "<a href='/mode?m=pacman'>Pac-Man</a>"
+            "</p>"
+            "<h3>OLED Configuration</h3>"
+            "<p>Try these until border + text align perfectly:</p>"
+            "<ul>"
+            "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 (common)</a></li>"
+            "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>"
+            "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 (common)</a></li>"
+            "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>"
+            "</ul>"
+            "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED OFF</a></p>"
+            "<h3>Display Rotation</h3>"
+            "<p>"
+            "<a href='/rotation?rot=0'>0&#176;</a> | "
+            "<a href='/rotation?rot=1'>90&#176;</a> | "
+            "<a href='/rotation?rot=2'>180&#176;</a> | "
+            "<a href='/rotation?rot=3'>270&#176;</a>"
+            "</p>"
+            "<p><i>Telnet console on port 23</i></p>"));
     });
 
     http.on("/health", HTTP_GET, [this]() {
@@ -141,7 +279,8 @@ class NetworkManager {
           return;
         }
         mode.toLowerCase();
-        setModeByName(displayManager, mode, statusMode, boingMode, weatherMode);
+        setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
+                      breakoutMode, pacManMode);
       }
 
       http.sendHeader("Location", "/");
@@ -194,6 +333,64 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
+    http.on("/rotation", HTTP_GET, [this]() {
+      if (http.hasArg("rot")) {
+        int val = http.arg("rot").toInt();
+        if (val >= 0 && val <= 3 && displayManager) {
+          displayManager->setRotation(static_cast<Config::DisplayRotation>(val));
+        }
+      }
+      http.sendHeader("Location", "/");
+      http.send(302, "text/plain", "");
+    });
+
+    http.on("/wifi", HTTP_GET, [this]() {
+      String html;
+      html.reserve(900);
+      html +=
+          "<!doctype html><html><head><meta name='viewport' "
+          "content='width=device-width,initial-scale=1'>";
+      html += "<title>WiFi Setup</title></head><body>";
+      html += "<h2>WiFi Setup</h2>";
+      html += "<form method='POST' action='/save-wifi'>";
+      html += "SSID:<br><input name='ssid' maxlength='31' required><br><br>";
+      html += "Password:<br><input name='pass' type='password' maxlength='63'><br><br>";
+      html += "<button type='submit'>Save & Reboot</button></form>";
+      html += "</body></html>";
+      http.send(200, "text/html", html);
+    });
+
+    http.on("/save-wifi", HTTP_POST, [this]() {
+      if (!http.hasArg("ssid") || !http.hasArg("pass")) {
+        http.send(400, "text/plain", "Missing SSID/password");
+        return;
+      }
+
+      String ssid = http.arg("ssid");
+      String pass = http.arg("pass");
+
+      if (ssid.length() == 0 || ssid.length() > 31 || pass.length() > 63) {
+        http.send(400, "text/plain", "Invalid SSID/password length");
+        return;
+      }
+
+      if (!CredentialsManager::saveCredentials(ssid.c_str(), pass.c_str())) {
+        http.send(500, "text/plain", "Failed to save credentials");
+        return;
+      }
+
+      http.send(200, "text/html", "<html><body><h3>Saved. Rebooting...</h3></body></html>");
+      delay(500);
+      ESP.restart();
+    });
+
+    http.on("/clear-eeprom", HTTP_GET, [this]() {
+      CredentialsManager::clearCredentials();
+      http.send(200, "text/plain", "EEPROM credentials cleared, rebooting...");
+      delay(500);
+      ESP.restart();
+    });
+
     http.on("/reboot", HTTP_GET, [this]() {
       http.send(200, "text/plain", "Rebooting...");
       delay(100);
@@ -209,25 +406,47 @@ class NetworkManager {
         displayManager(nullptr),
         statusMode(nullptr),
         boingMode(nullptr),
-        weatherMode(nullptr) {}
+        weatherMode(nullptr),
+        clockMode(nullptr),
+        breakoutMode(nullptr),
+        pacManMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
-  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather) {
+  void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
+                BreakoutMode* breakout, PacManMode* pacman) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
+    clockMode = clock;
+    breakoutMode = breakout;
+    pacManMode = pacman;
   }
 
   void begin() {
+    CredentialsManager::initialize();
+
     WiFi.persistent(false);
-    WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     WiFi.hostname(Config::HOSTNAME);
-    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
 
-    Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    if (CredentialsManager::loadCredentials(activeSsid, sizeof(activeSsid), activePass,
+                                            sizeof(activePass))) {
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(activeSsid, activePass);
+      Logger::printf("WiFi: using EEPROM credentials '%s'", activeSsid);
+    } else if (strlen(Config::WIFI_SSID) > 0) {
+      strncpy(activeSsid, Config::WIFI_SSID, sizeof(activeSsid) - 1);
+      strncpy(activePass, Config::WIFI_PASS, sizeof(activePass) - 1);
+      CredentialsManager::saveCredentials(activeSsid, activePass);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(activeSsid, activePass);
+      Logger::printf("WiFi: using compiled credentials '%s'", activeSsid);
+    } else {
+      Logger::println("WiFi: no credentials found, starting setup AP");
+      startSetupAP(false);
+    }
 
     setupRoutes();
     ElegantOTA.begin(&http, Config::OTA_USER, Config::OTA_PASS);
@@ -241,22 +460,51 @@ class NetworkManager {
     http.handleClient();
     ElegantOTA.loop();
 
+    // Process DNS requests in AP mode for captive portal (wildcard redirect)
+    if (apMode) {
+      dnsServer.processNextRequest();
+    }
+
+    if (apMode && !apFallbackActive) {
+      return;
+    }
+
     wl_status_t status = WiFi.status();
-    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED) {
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED ||
+        status == WL_NO_SSID_AVAIL) {
       uint32_t now = millis();
+
+      if (disconnectedStartMs == 0) {
+        disconnectedStartMs = now;
+      }
+
+      if (!apMode && now - disconnectedStartMs >= AP_FALLBACK_TIMEOUT_MS) {
+        Logger::println("WiFi: offline too long, enabling fallback setup AP");
+        startSetupAP(true);
+      }
+
       if (now - wifiRetryMs >= wifiRetryIntervalMs) {
         Logger::printf("WiFi: reconnecting (interval=%lus)...", wifiRetryIntervalMs / 1000);
         WiFi.disconnect();
-        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+        WiFi.begin(activeSsid[0] ? activeSsid : Config::WIFI_SSID,
+                   activePass[0] ? activePass : Config::WIFI_PASS);
         wifiRetryMs = now;
         wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
       }
     } else if (status == WL_CONNECTED) {
       wifiRetryIntervalMs = 5000;
+      disconnectedStartMs = 0;
+      stopFallbackAPIfConnected();
     }
   }
 
   void logStatus() {
+    if (apMode) {
+      Logger::printf("WiFi: AP mode ip=%s heap=%u", WiFi.softAPIP().toString().c_str(),
+                     ESP.getFreeHeap());
+      return;
+    }
+
     Logger::printf("WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
                    (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str() : "(unset)",
                    (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());

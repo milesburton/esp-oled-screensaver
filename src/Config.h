@@ -38,6 +38,15 @@ static constexpr float BOING_X_SPEED = 52.0f;        // Horizontal speed (px/s)
 static constexpr float BOING_BOUNCE_FREQ = 0.75f;    // Bounces per second
 static constexpr float BOING_BOUNCE_HEIGHT = 34.0f;  // Max bounce height in pixels
 
+// ===== Weather API (Open-Meteo) =====
+static constexpr float WEATHER_LATITUDE = 51.5f;                             // London default
+static constexpr float WEATHER_LONGITUDE = -0.1f;                            // London default
+static constexpr uint32_t WEATHER_FETCH_INTERVAL_MS = 10UL * 60UL * 1000UL;  // 10 minutes
+
+// ===== Clock / NTP =====
+static constexpr int NTP_UTC_OFFSET_HOURS = 0;  // UTC; change for local tz
+static constexpr uint32_t NTP_RESYNC_INTERVAL_MS = 60UL * 60UL * 1000UL;  // Re-sync every hour
+
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
 

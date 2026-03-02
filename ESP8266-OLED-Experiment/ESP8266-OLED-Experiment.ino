@@ -1,14 +1,17 @@
 // Hardware: ESP8266 + 128x64 OLED (SSD1306/SH1106)
 // Wiring: SDA=GPIO0, SCL=GPIO2, I2C addr=0x3C
 
-#include "src/BoingMode.h"
-#include "src/Config.h"
-#include "src/DisplayManager.h"
-#include "src/Logger.h"
-#include "src/NetworkManager.h"
-#include "src/StatusMode.h"
-#include "src/TelnetConsole.h"
-#include "src/WeatherMode.h"
+#include "BoingMode.h"
+#include "BreakoutMode.h"
+#include "ClockMode.h"
+#include "Config.h"
+#include "DisplayManager.h"
+#include "Logger.h"
+#include "NetworkManager.h"
+#include "PacManMode.h"
+#include "StatusMode.h"
+#include "TelnetConsole.h"
+#include "WeatherMode.h"
 
 DisplayManager displayManager;
 NetworkManager networkManager;
@@ -17,6 +20,9 @@ TelnetConsole telnetConsole;
 StatusMode statusMode;
 BoingMode boingMode;
 WeatherMode weatherMode;
+ClockMode clockMode;
+BreakoutMode breakoutMode;
+PacManMode pacManMode;
 
 uint32_t lastStatusLog = 0;
 
@@ -30,10 +36,12 @@ void setup() {
   displayManager.begin();
 
   networkManager.setDisplayManager(&displayManager);
-  networkManager.setModes(&statusMode, &boingMode, &weatherMode);
+  networkManager.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
+                          &pacManMode);
 
   telnetConsole.setDisplayManager(&displayManager);
-  telnetConsole.setModes(&statusMode, &boingMode, &weatherMode);
+  telnetConsole.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
+                         &pacManMode);
 
   networkManager.begin();
   telnetConsole.begin();
