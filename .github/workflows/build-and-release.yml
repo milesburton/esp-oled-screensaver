@@ -23,34 +23,108 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract firmware version
-        id: get-version
+      - name: Get current version
+        id: current-version
         run: |
-          VERSION=$(grep 'FW_VERSION.*=' src/Config.h | grep -oP 'platform-\K[0-9.]+')
-          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
-          echo "Firmware version: v${VERSION}"
+          CURRENT=$(grep 'FW_VERSION.*=' src/Config.h | grep -oP 'platform-\K[0-9.]+')
+          echo "current=${CURRENT}" >> $GITHUB_OUTPUT
+          echo "Current firmware version: ${CURRENT}"
+
+      - name: Determine version bump type
+        id: bump-type
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline)
+          else
+            COMMITS=$(git log $LAST_TAG..HEAD --oneline)
+          fi
+          
+          echo "Recent commits:"
+          echo "$COMMITS"
+          
+          # Check for breaking changes or types
+          if echo "$COMMITS" | grep -qE "^.+!:|BREAKING CHANGE"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+            echo "Detected BREAKING CHANGE - Major version bump"
+          elif echo "$COMMITS" | grep -qE "^feat"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+            echo "Detected feat: - Minor version bump"
+          else
+            echo "bump=patch" >> $GITHUB_OUTPUT
+            echo "Detected fix/chore/docs - Patch version bump"
+          fi
+
+      - name: Calculate new version
+        id: new-version
+        run: |
+          CURRENT="${{ steps.current-version.outputs.current }}"
+          BUMP="${{ steps.bump-type.outputs.bump }}"
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          case $BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "new_tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "New version: ${NEW_VERSION}"
+
+      - name: Check if version already released
+        id: check-tag
+        run: |
+          TAG="${{ steps.new-version.outputs.new_tag }}"
+          if git rev-parse "$TAG" 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $TAG already exists - skipping release"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG is new - proceeding with release"
+          fi
+
+      - name: Update firmware version in Config.h
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          NEW_VERSION="${{ steps.new-version.outputs.new }}"
+          sed -i "s/FW_VERSION = \"platform-[0-9.]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
+          echo "Updated Config.h to version ${NEW_VERSION}"
+          grep 'FW_VERSION' src/Config.h
+
+      - name: Commit version bump
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add src/Config.h
+          git commit -m "chore: bump version to ${{ steps.new-version.outputs.new }}" || echo "No changes to commit"
+          git push origin main
 
       - name: Set up Python
+        if: steps.check-tag.outputs.exists == 'false'
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
       - name: Install PlatformIO
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           python -m pip install --upgrade pip
           pip install platformio==${{ env.PLATFORMIO_VERSION }}
-
-      - name: Check if version tag already exists
-        id: check-tag
-        run: |
-          if git rev-parse ${{ steps.get-version.outputs.version }} 2>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag ${{ steps.get-version.outputs.version }} already exists"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag ${{ steps.get-version.outputs.version }} is new"
-          fi
 
       - name: Build firmware for D1 Mini
         if: steps.check-tag.outputs.exists == 'false'
@@ -72,16 +146,16 @@ jobs:
         if: steps.check-tag.outputs.exists == 'false'
         run: |
           mkdir -p release
-          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_esp8266_d1_mini.bin
-          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_esp8266_nodmcu.bin
-          cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_esp8266_generic.bin
+          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_d1_mini.bin
+          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_nodmcu.bin
+          cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_generic.bin
           ls -lh release/*.bin
 
       - name: Generate SHA256 checksums
         if: steps.check-tag.outputs.exists == 'false'
         run: |
           cd release
-          for file in esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_*.bin; do
+          for file in esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.bin; do
             sha256sum "$file" > "${file}.sha256"
             cat "${file}.sha256"
           done
@@ -90,13 +164,21 @@ jobs:
         id: generate-notes
         if: steps.check-tag.outputs.exists == 'false'
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          NOTES=$(cat <<EOF
-          ## Firmware Release ${{ steps.get-version.outputs.version }}
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMIT_LOG=$(git log --pretty=format:"- %h: %s")
+          else
+            COMMIT_LOG=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %h: %s")
+          fi
           
-          ### Latest Changes
+          NOTES=$(cat <<EOF
+          ## Firmware Release ${{ steps.new-version.outputs.new_tag }}
+          
+          ### Version: ${{ steps.new-version.outputs.new }} (${{ steps.bump-type.outputs.bump }} bump)
+          
+          ### Changes
           \`\`\`
-          ${COMMIT_MSG}
+          ${COMMIT_LOG}
           \`\`\`
           
           ### Build Information
@@ -139,12 +221,12 @@ jobs:
         if: steps.check-tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.get-version.outputs.version }}
-          name: "Firmware ${{ steps.get-version.outputs.version }}"
+          tag_name: ${{ steps.new-version.outputs.new_tag }}
+          name: "Firmware ${{ steps.new-version.outputs.new_tag }}"
           body: ${{ steps.generate-notes.outputs.notes }}
           files: |
-            release/esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_*.bin
-            release/esp8266-oled-experiment_${{ steps.get-version.outputs.version }}_*.sha256
+            release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.bin
+            release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.sha256
           draft: false
           prerelease: false
         env:
@@ -156,10 +238,11 @@ jobs:
           echo "## Build Status Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.check-tag.outputs.exists }}" = "true" ]; then
-            echo "✅ **Version already released**: Tag ${{ steps.get-version.outputs.version }} exists" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Version already released**: Tag ${{ steps.new-version.outputs.new_tag }} exists" >> $GITHUB_STEP_SUMMARY
             echo "No new release created." >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ **New firmware release**: ${{ steps.get-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **New firmware release**: ${{ steps.new-version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Version bumped: ${{ steps.current-version.outputs.current }} → ${{ steps.new-version.outputs.new }} (${{ steps.bump-type.outputs.bump }})" >> $GITHUB_STEP_SUMMARY
             echo "- D1 Mini binary created ✓" >> $GITHUB_STEP_SUMMARY
             echo "- NodeMCU binary created ✓" >> $GITHUB_STEP_SUMMARY
             echo "- Generic binary created ✓" >> $GITHUB_STEP_SUMMARY
