@@ -4,59 +4,52 @@
 
 #include "../../src/Logger.h"
 
-test(LoggerTest, PrintlnBasic) {
-  // Logger should handle basic println
-  Logger::println("Test message");
-  assertTrue(true);
+test(LoggerTest, DefaultLevelIsInfo) {
+  assertEqual((uint8_t)Logger::minLevel, (uint8_t)Logger::Level::INFO);
 }
 
-test(LoggerTest, PrintlnEmpty) {
-  // Logger should handle empty strings
-  Logger::println("");
-  assertTrue(true);
+test(LoggerTest, LevelOrderDebugLessThanInfo) {
+  assertTrue((uint8_t)Logger::Level::DEBUG < (uint8_t)Logger::Level::INFO);
 }
 
-test(LoggerTest, PrintlnLong) {
-  // Logger should handle long strings
-  Logger::println("This is a very long message that should still be handled correctly");
-  assertTrue(true);
+test(LoggerTest, LevelOrderInfoLessThanWarn) {
+  assertTrue((uint8_t)Logger::Level::INFO < (uint8_t)Logger::Level::WARN);
 }
 
-test(LoggerTest, PrintfBasic) {
-  // Logger should handle printf format strings
-  Logger::printf("Integer: %d", 42);
-  assertTrue(true);
+test(LoggerTest, LevelOrderWarnLessThanError) {
+  assertTrue((uint8_t)Logger::Level::WARN < (uint8_t)Logger::Level::ERROR);
 }
 
-test(LoggerTest, PrintfMultipleArgs) {
-  // Logger should handle multiple format arguments
-  Logger::printf("Value1: %d, Value2: %s", 42, "test");
-  assertTrue(true);
+test(LoggerTest, MinLevelFiltersDebugWhenSetToInfo) {
+  Logger::minLevel = Logger::Level::INFO;
+  assertTrue(Logger::Level::DEBUG < Logger::minLevel);
 }
 
-test(LoggerTest, PrintfFloat) {
-  // Logger should handle float formatting
-  Logger::printf("Float: %.2f", 3.14159);
-  assertTrue(true);
+test(LoggerTest, MinLevelAllowsInfoWhenSetToInfo) {
+  Logger::minLevel = Logger::Level::INFO;
+  assertFalse(Logger::Level::INFO < Logger::minLevel);
 }
 
-test(LoggerTest, PrintfHex) {
-  // Logger should handle hex formatting
-  Logger::printf("Hex: 0x%02X", 255);
-  assertTrue(true);
+test(LoggerTest, MinLevelCanBeChangedToDebug) {
+  Logger::minLevel = Logger::Level::DEBUG;
+  assertEqual((uint8_t)Logger::minLevel, (uint8_t)Logger::Level::DEBUG);
+  Logger::minLevel = Logger::Level::INFO;
 }
 
-test(LoggerTest, ConsecutiveCalls) {
-  // Logger should handle multiple consecutive calls
-  Logger::println("Line 1");
-  Logger::println("Line 2");
-  Logger::printf("Line %d", 3);
+test(LoggerTest, PrintlnAndPrintfDoNotCrash) {
+  Logger::println("ping");
+  Logger::printf("val=%d", 1);
+  Logger::debug("dbg");
+  Logger::warn("wrn");
+  Logger::error("err");
   assertTrue(true);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  while (!Serial)
+    ;
+  delay(1000);
 }
 
 void loop() {

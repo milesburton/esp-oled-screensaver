@@ -101,20 +101,45 @@ test(ConfigTest, OledToggle) {
   assertTrue(config.oledEnabled);
 }
 
-// Test hostname and version are defined
 test(ConfigTest, HostnameIsDefined) {
   assertTrue(Config::HOSTNAME != nullptr);
-  assertEqual((int)strlen(Config::HOSTNAME), (int)strlen(Config::HOSTNAME));
+  assertTrue(strlen(Config::HOSTNAME) > 0);
 }
 
 test(ConfigTest, VersionIsDefined) {
   assertTrue(Config::FW_VERSION != nullptr);
-  assertEqual((int)strlen(Config::FW_VERSION), (int)strlen(Config::FW_VERSION));
+  assertTrue(strlen(Config::FW_VERSION) > 0);
+}
+
+// Test rotation defaults and names
+test(ConfigTest, RuntimeConfigDefaultRotation) {
+  Config::RuntimeConfig config;
+  assertEqual((uint8_t)config.rotation, (uint8_t)Config::DisplayRotation::R0);
+}
+
+test(ConfigTest, GetRotationNameR0) {
+  Config::RuntimeConfig config;
+  config.rotation = Config::DisplayRotation::R0;
+  assertEqual(strcmp("0\xC2\xB0", config.getRotationName()), 0);
+}
+
+test(ConfigTest, GetRotationNameR2) {
+  Config::RuntimeConfig config;
+  config.rotation = Config::DisplayRotation::R2;
+  assertEqual(strcmp("180\xC2\xB0", config.getRotationName()), 0);
+}
+
+test(ConfigTest, GetU8G2Rotation) {
+  Config::RuntimeConfig config;
+  config.rotation = Config::DisplayRotation::R3;
+  assertEqual(config.getU8G2Rotation(), (uint8_t)3);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  while (!Serial)
+    ;
+  delay(1000);
 }
 
 void loop() {
