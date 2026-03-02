@@ -42,3 +42,6 @@ Thumbs.db
 # IDE files
 *.sublime-*
 .idea/
+
+# Claude Code (local only)
+.claude/
