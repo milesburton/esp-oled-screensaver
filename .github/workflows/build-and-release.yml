@@ -134,6 +134,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install platformio==${{ env.PLATFORMIO_VERSION }}
 
+      - name: Prepare secrets file for CI build
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+          echo "Using CI secrets file for build"
+
       - name: Build firmware for D1 Mini
         if: steps.check-tag.outputs.exists == 'false'
         run: |
