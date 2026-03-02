@@ -14,6 +14,7 @@
 #include "Logger.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
+#include "ScreensaverMode.h"
 
 class NetworkManager {
  private:
@@ -26,6 +27,7 @@ class NetworkManager {
   ClockMode* clockMode;
   BreakoutMode* breakoutMode;
   PacManMode* pacManMode;
+  ScreensaverMode* screensaverMode;
 
   bool apMode = false;
   bool apFallbackActive = false;
@@ -220,6 +222,7 @@ class NetworkManager {
             "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
             "<h3>Display Mode</h3>"
             "<p>"
+            "<a href='/mode?m=screensaver'>Screensaver</a> | "
             "<a href='/mode?m=status'>Status</a> | "
             "<a href='/mode?m=boing'>Boing</a> | "
             "<a href='/mode?m=weather'>Weather</a> | "
@@ -280,7 +283,7 @@ class NetworkManager {
         }
         mode.toLowerCase();
         setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
-                      breakoutMode, pacManMode);
+                      breakoutMode, pacManMode, screensaverMode);
       }
 
       http.sendHeader("Location", "/");
@@ -409,18 +412,20 @@ class NetworkManager {
         weatherMode(nullptr),
         clockMode(nullptr),
         breakoutMode(nullptr),
-        pacManMode(nullptr) {}
+        pacManMode(nullptr),
+        screensaverMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
   void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
-                BreakoutMode* breakout, PacManMode* pacman) {
+                BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
     clockMode = clock;
     breakoutMode = breakout;
     pacManMode = pacman;
+    screensaverMode = screensaver;
   }
 
   void begin() {

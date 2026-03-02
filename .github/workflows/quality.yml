@@ -138,7 +138,7 @@ jobs:
           mkdir -p firmware_artifacts
           VERSION=$(python3 scripts/version.py current)
           cp .pio/build/${{ matrix.environment }}/firmware.bin \
-             firmware_artifacts/esp8266-oled-experiment_${VERSION}_${{ matrix.environment }}.bin
+             firmware_artifacts/esp-oled-screensaver_${VERSION}_${{ matrix.environment }}.bin
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

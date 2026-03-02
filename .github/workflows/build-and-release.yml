@@ -153,24 +153,24 @@ jobs:
         run: |
           mkdir -p release
           FINAL_TAG="${{ steps.final-version.outputs.final_tag }}"
-          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_d1_mini.bin
-          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_nodmcu.bin
-          cp .pio/build/esp8266_generic/firmware.bin release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_generic.bin
+          cp .pio/build/esp8266_d1_mini/firmware.bin release/esp-oled-screensaver_${FINAL_TAG}_esp8266_d1_mini.bin
+          cp .pio/build/esp8266_nodmcu/firmware.bin release/esp-oled-screensaver_${FINAL_TAG}_esp8266_nodmcu.bin
+          cp .pio/build/esp8266_generic/firmware.bin release/esp-oled-screensaver_${FINAL_TAG}_esp8266_generic.bin
           ls -lh release/*.bin
 
       - name: Verify all binary outputs exist
         run: |
           FINAL_TAG="${{ steps.final-version.outputs.final_tag }}"
-          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_d1_mini.bin"
-          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_nodmcu.bin"
-          test -f "release/esp8266-oled-experiment_${FINAL_TAG}_esp8266_generic.bin"
+          test -f "release/esp-oled-screensaver_${FINAL_TAG}_esp8266_d1_mini.bin"
+          test -f "release/esp-oled-screensaver_${FINAL_TAG}_esp8266_nodmcu.bin"
+          test -f "release/esp-oled-screensaver_${FINAL_TAG}_esp8266_generic.bin"
           echo "All expected firmware binaries are present"
 
       - name: Generate SHA256 checksums
         run: |
           cd release
           FINAL_TAG="${{ steps.final-version.outputs.final_tag }}"
-          for file in esp8266-oled-experiment_${FINAL_TAG}_*.bin; do
+          for file in esp-oled-screensaver_${FINAL_TAG}_*.bin; do
             sha256sum "$file" > "${file}.sha256"
             cat "${file}.sha256"
           done
@@ -252,8 +252,8 @@ jobs:
           name: "Firmware ${{ steps.final-version.outputs.final_tag }}"
           body: ${{ steps.generate-notes.outputs.notes }}
           files: |
-            release/esp8266-oled-experiment_${{ steps.final-version.outputs.final_tag }}_*.bin
-            release/esp8266-oled-experiment_${{ steps.final-version.outputs.final_tag }}_*.sha256
+            release/esp-oled-screensaver_${{ steps.final-version.outputs.final_tag }}_*.bin
+            release/esp-oled-screensaver_${{ steps.final-version.outputs.final_tag }}_*.sha256
           draft: false
           prerelease: false
         env:

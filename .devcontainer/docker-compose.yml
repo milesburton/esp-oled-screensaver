@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: esp8266-oled-experiment
+    container_name: esp-oled-screensaver
     working_dir: /workspace
     volumes:
       - ..:/workspace

@@ -10,7 +10,7 @@
 
 namespace Config {
 // ===== Identity =====
-static constexpr const char* HOSTNAME = "esp-oled-experiment";
+static constexpr const char* HOSTNAME = "esp-oled-screensaver";
 static constexpr const char* FW_VERSION = "platform-1.0.35";
 
 // ===== WiFi Credentials =====
@@ -47,6 +47,9 @@ static constexpr uint32_t WEATHER_FETCH_INTERVAL_MS = 10UL * 60UL * 1000UL;  // 
 static constexpr int NTP_UTC_OFFSET_HOURS = 0;  // UTC; change for local tz
 static constexpr uint32_t NTP_RESYNC_INTERVAL_MS = 60UL * 60UL * 1000UL;  // Re-sync every hour
 
+// ===== Screensaver =====
+static constexpr uint32_t SCREENSAVER_MODE_INTERVAL_MS = 30UL * 1000UL;  // 30s per mode
+
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
 
@@ -55,7 +58,7 @@ enum class DisplayRotation : uint8_t { R0 = 0, R1 = 1, R2 = 2, R3 = 3 };
 
 struct RuntimeConfig {
   OledDriver driver = OledDriver::SSD1306;         // Standard configuration (fixes border)
-  DisplayRotation rotation = DisplayRotation::R0;  // Display rotation (0/90/180/270)
+  DisplayRotation rotation = DisplayRotation::R2;  // Display rotation (0/90/180/270)
   int xOffset = 0;                                 // SSD1306 standard: 0 (no offset needed)
   bool oledEnabled = true;
 

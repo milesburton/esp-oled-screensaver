@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "NetworkManager.h"
 #include "PacManMode.h"
+#include "ScreensaverMode.h"
 #include "StatusMode.h"
 #include "TelnetConsole.h"
 #include "WeatherMode.h"
@@ -23,6 +24,7 @@ WeatherMode weatherMode;
 ClockMode clockMode;
 BreakoutMode breakoutMode;
 PacManMode pacManMode;
+ScreensaverMode screensaverMode(&clockMode, &boingMode, &weatherMode, &breakoutMode, &pacManMode);
 
 uint32_t lastStatusLog = 0;
 
@@ -37,16 +39,16 @@ void setup() {
 
   networkManager.setDisplayManager(&displayManager);
   networkManager.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
-                          &pacManMode);
+                          &pacManMode, &screensaverMode);
 
   telnetConsole.setDisplayManager(&displayManager);
   telnetConsole.setModes(&statusMode, &boingMode, &weatherMode, &clockMode, &breakoutMode,
-                         &pacManMode);
+                         &pacManMode, &screensaverMode);
 
   networkManager.begin();
   telnetConsole.begin();
 
-  displayManager.setMode(&statusMode, 400);  // 2.5 FPS
+  displayManager.setMode(&screensaverMode, 40);  // 25 FPS
 
   Logger::println("System ready!");
 }

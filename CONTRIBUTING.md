@@ -14,8 +14,8 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 **Local Installation**:
 
 ```bash
-git clone https://github.com/milesburton/esp8266-oled-experiment.git
-cd esp8266-oled-experiment
+git clone https://github.com/milesburton/esp-oled-screensaver.git
+cd esp-oled-screensaver
 cp secrets.h.template secrets.h
 
 pip install pre-commit

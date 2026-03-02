@@ -5,6 +5,7 @@
 #include "ClockMode.h"
 #include "DisplayManager.h"
 #include "PacManMode.h"
+#include "ScreensaverMode.h"
 #include "StatusMode.h"
 #include "WeatherMode.h"
 
@@ -12,8 +13,8 @@
 // pointer was non-null.
 inline bool setModeByName(DisplayManager* displayManager, const String& name,
                           StatusMode* statusMode, BoingMode* boingMode, WeatherMode* weatherMode,
-                          ClockMode* clockMode, BreakoutMode* breakoutMode,
-                          PacManMode* pacManMode) {
+                          ClockMode* clockMode, BreakoutMode* breakoutMode, PacManMode* pacManMode,
+                          ScreensaverMode* screensaverMode) {
   if (name == "status" && statusMode) {
     displayManager->setMode(statusMode, 400);  // 2.5 FPS
     return true;
@@ -31,6 +32,9 @@ inline bool setModeByName(DisplayManager* displayManager, const String& name,
     return true;
   } else if (name == "pacman" && pacManMode) {
     displayManager->setMode(pacManMode, 40);  // 25 FPS
+    return true;
+  } else if (name == "screensaver" && screensaverMode) {
+    displayManager->setMode(screensaverMode, 40);  // 25 FPS
     return true;
   }
   return false;

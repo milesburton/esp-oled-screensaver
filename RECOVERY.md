@@ -53,8 +53,8 @@ If AP mode doesn't work or you need to flash again:
 1. **Clone or download the repository**:
 
    ```bash
-   git clone https://github.com/milesburton/esp8266-oled-experiment.git
-   cd esp8266-oled-experiment
+   git clone https://github.com/milesburton/esp-oled-screensaver.git
+   cd esp-oled-screensaver
    ```
 
 2. **Configure credentials**:
@@ -103,8 +103,8 @@ We provide an automated recovery script that handles everything:
 
 ```bash
 # Clone repository
-git clone https://github.com/milesburton/esp8266-oled-experiment.git
-cd esp8266-oled-experiment
+git clone https://github.com/milesburton/esp-oled-screensaver.git
+cd esp-oled-screensaver
 
 # Run recovery script
 ./recovery.sh [port] [board]
@@ -225,8 +225,8 @@ esptool.py version  # Will list available ports
 1. **Clone repository and setup**:
 
    ```bash
-   git clone https://github.com/milesburton/esp8266-oled-experiment.git
-   cd esp8266-oled-experiment
+   git clone https://github.com/milesburton/esp-oled-screensaver.git
+   cd esp-oled-screensaver
    ```
 
 2. **Configure WiFi credentials**:
@@ -347,7 +347,7 @@ From a computer on the same network:
 
 ```bash
 # Ping test
-ping esp-oled-experiment.local
+ping esp-oled-screensaver.local
 
 # nmap to find device IP
 nmap -sn 192.168.1.0/24
