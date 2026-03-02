@@ -6,6 +6,10 @@ on:
       - main
       - master
 
+permissions:
+  contents: write
+  packages: read
+
 env:
   PYTHON_VERSION: 3.11
   PLATFORMIO_VERSION: 6.1.16
