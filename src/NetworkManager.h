@@ -160,6 +160,54 @@ class NetworkManager {
       http.sendContent(F(" addr=0x"));
       http.sendContent(String(Config::OLED_ADDR, HEX));
       http.sendContent(F("</li></ul>"));
+      http.sendContent(F("<h3>Diagnostics</h3><ul>"));
+      
+      bool credLoaded = CredentialsManager::hasValidCredentials();
+      http.sendContent(F("<li><b>WiFi Creds:</b> "));
+      http.sendContent(credLoaded ? "EEPROM" : "Compiled");
+      http.sendContent(F("</li>"));
+      
+      uint32_t freeHeap = ESP.getFreeHeap();
+      uint32_t totalHeap = 81920;  // ESP8266 has 80KB total heap
+      uint8_t heapAvail = (freeHeap * 100) / totalHeap;
+      http.sendContent(F("<li><b>RAM Free:</b> "));
+      http.sendContent(String(freeHeap));
+      http.sendContent(F("B ("));
+      http.sendContent(String(heapAvail));
+      http.sendContent(F("%)</li>"));
+      
+      uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+      if (maxBlock > 0) {
+        http.sendContent(F("<li><b>Max Block:</b> "));
+        http.sendContent(String(maxBlock));
+        http.sendContent(F("B</li>"));
+      }
+      
+      uint32_t flashSize = ESP.getFlashChipSize();
+      uint32_t sketchSize = ESP.getSketchSize();
+      uint8_t flashUsed = (sketchSize * 100) / flashSize;
+      http.sendContent(F("<li><b>Flash:</b> "));
+      http.sendContent(String(sketchSize));
+      http.sendContent(F("B ("));
+      http.sendContent(String(flashUsed));
+      http.sendContent(F("%)</li>"));
+      
+      http.sendContent(F("<li><b>EEPROM:</b> "));
+      http.sendContent(String(CredentialsManager::EEPROM_SIZE));
+      if (credLoaded) {
+        http.sendContent(F("B (97B used)</li>"));
+      } else {
+        http.sendContent(F("B</li>"));
+      }
+      
+      uint16_t vcc = ESP.getVcc();
+      if (vcc > 0) {
+        http.sendContent(F("<li><b>Power:</b> "));
+        http.sendContent(String(vcc));
+        http.sendContent(F("mV</li>"));
+      }
+      
+      http.sendContent(F("</ul>"));
 
       http.sendContent(
           F("<p><a href='/update'>OTA Update</a></p>"
