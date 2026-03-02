@@ -19,14 +19,6 @@ static constexpr const char* WIFI_PASS = secrets::WIFI_PASS;
 static constexpr const char* OTA_USER = secrets::OTA_USER;
 static constexpr const char* OTA_PASS = secrets::OTA_PASS;
 
-// Runtime WiFi credentials (loaded from EEPROM)
-struct RuntimeWiFiConfig {
-  char ssid[32] = {0};
-  char password[64] = {0};
-};
-
-extern RuntimeWiFiConfig runtimeWiFi;
-
 // ===== OLED Hardware =====
 static constexpr uint8_t OLED_SDA = 0;      // GPIO0
 static constexpr uint8_t OLED_SCL = 2;      // GPIO2
@@ -48,34 +40,36 @@ static constexpr float BOING_BOUNCE_HEIGHT = 34.0f;  // Max bounce height in pix
 
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
-enum class DisplayRotation : uint8_t { None = 0, _90CW = 1, _180 = 2, _90CCW = 3 };
+
+// Display rotation: 0=normal, 1=90deg CW, 2=180deg, 3=270deg CW
+enum class DisplayRotation : uint8_t { R0 = 0, R1 = 1, R2 = 2, R3 = 3 };
 
 struct RuntimeConfig {
-  OledDriver driver = OledDriver::SSD1306;  // Standard configuration (fixes border)
-  int xOffset = 0;                          // SSD1306 standard: 0 (no offset needed)
+  OledDriver driver = OledDriver::SSD1306;         // Standard configuration (fixes border)
+  DisplayRotation rotation = DisplayRotation::R0;  // Display rotation (0/90/180/270)
+  int xOffset = 0;                                 // SSD1306 standard: 0 (no offset needed)
   bool oledEnabled = true;
-  DisplayRotation rotation = DisplayRotation::None;
 
   const char* getDriverName() const {
     return (driver == OledDriver::SSD1306) ? "SSD1306" : "SH1106";
   }
 
-  uint8_t getU8G2Rotation() const { return static_cast<uint8_t>(rotation); }
-
   const char* getRotationName() const {
     switch (rotation) {
-      case DisplayRotation::None:
+      case DisplayRotation::R0:
         return "0°";
-      case DisplayRotation::_90CW:
-        return "90° CW";
-      case DisplayRotation::_180:
+      case DisplayRotation::R1:
+        return "90°";
+      case DisplayRotation::R2:
         return "180°";
-      case DisplayRotation::_90CCW:
-        return "90° CCW";
+      case DisplayRotation::R3:
+        return "270°";
       default:
-        return "unknown";
+        return "0°";
     }
   }
+
+  uint8_t getU8G2Rotation() const { return static_cast<uint8_t>(rotation); }
 };
 
 extern RuntimeConfig runtime;
