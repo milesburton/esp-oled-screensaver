@@ -25,7 +25,7 @@ class DisplayManager {
         u8g2(nullptr),
         currentMode(nullptr),
         lastFrameMs(0),
-        frameIntervalMs(40),  // Default: ~25 FPS
+        frameIntervalMs(40),      // Default: ~25 FPS
         currentRotation(0xFF) {}  // Initialize to invalid value to force first rotation apply
 
   void begin() {

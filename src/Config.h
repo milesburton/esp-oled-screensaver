@@ -41,10 +41,10 @@ static constexpr uint16_t HTTP_PORT = 80;
 static constexpr uint16_t TELNET_PORT = 23;
 
 // ===== Boing Animation =====
-static constexpr int BOING_BALL_RADIUS = 12;      // Ball radius in pixels
-static constexpr float BOING_X_SPEED = 52.0f;     // Horizontal speed (px/s)
-static constexpr float BOING_BOUNCE_FREQ = 0.75f; // Bounces per second
-static constexpr float BOING_BOUNCE_HEIGHT = 34.0f; // Max bounce height in pixels
+static constexpr int BOING_BALL_RADIUS = 12;         // Ball radius in pixels
+static constexpr float BOING_X_SPEED = 52.0f;        // Horizontal speed (px/s)
+static constexpr float BOING_BOUNCE_FREQ = 0.75f;    // Bounces per second
+static constexpr float BOING_BOUNCE_HEIGHT = 34.0f;  // Max bounce height in pixels
 
 // ===== Runtime OLED Configuration =====
 enum class OledDriver : uint8_t { SSD1306, SH1106 };
@@ -60,17 +60,20 @@ struct RuntimeConfig {
     return (driver == OledDriver::SSD1306) ? "SSD1306" : "SH1106";
   }
 
-  uint8_t getU8G2Rotation() const {
-    return static_cast<uint8_t>(rotation);
-  }
+  uint8_t getU8G2Rotation() const { return static_cast<uint8_t>(rotation); }
 
   const char* getRotationName() const {
     switch (rotation) {
-      case DisplayRotation::None: return "0°";
-      case DisplayRotation::_90CW: return "90° CW";
-      case DisplayRotation::_180: return "180°";
-      case DisplayRotation::_90CCW: return "90° CCW";
-      default: return "unknown";
+      case DisplayRotation::None:
+        return "0°";
+      case DisplayRotation::_90CW:
+        return "90° CW";
+      case DisplayRotation::_180:
+        return "180°";
+      case DisplayRotation::_90CCW:
+        return "90° CCW";
+      default:
+        return "unknown";
     }
   }
 };

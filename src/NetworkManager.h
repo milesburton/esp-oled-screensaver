@@ -26,7 +26,7 @@ class NetworkManager {
 
   // WiFi reconnection state
   uint32_t wifiRetryMs = 0;
-  uint32_t wifiRetryIntervalMs = 5000;  // Start at 5s
+  uint32_t wifiRetryIntervalMs = 5000;                          // Start at 5s
   static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;  // Cap at 5 min
 
   // Connection failure tracking for auto-clear EEPROM
@@ -199,7 +199,9 @@ class NetworkManager {
       html += "<style>";
       html += "body { font-family: Arial; margin: 20px; }";
       html += "input { padding: 8px; width: 100%; margin: 5px 0; box-sizing: border-box; }";
-      html += "button { padding: 10px; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }";
+      html +=
+          "button { padding: 10px; width: 100%; background: #007bff; color: white; border: none; "
+          "border-radius: 4px; cursor: pointer; }";
       html += "button:hover { background: #0056b3; }";
       html += ".error { color: red; margin: 10px 0; }";
       html += "</style></head><body>";
@@ -288,10 +290,9 @@ class NetworkManager {
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
     // Step 1: Try to load credentials from EEPROM
-    if (CredentialsManager::loadCredentials(Config::runtimeWiFi.ssid,
-                                             sizeof(Config::runtimeWiFi.ssid),
-                                             Config::runtimeWiFi.password,
-                                             sizeof(Config::runtimeWiFi.password))) {
+    if (CredentialsManager::loadCredentials(
+            Config::runtimeWiFi.ssid, sizeof(Config::runtimeWiFi.ssid),
+            Config::runtimeWiFi.password, sizeof(Config::runtimeWiFi.password))) {
       // Use EEPROM credentials
       Logger::println("WiFi: using EEPROM credentials");
       WiFi.mode(WIFI_STA);
@@ -299,7 +300,8 @@ class NetworkManager {
       WiFi.hostname(Config::HOSTNAME);
       WiFi.begin(Config::runtimeWiFi.ssid, Config::runtimeWiFi.password);
       Logger::printf("WiFi: connecting to '%s'...", Config::runtimeWiFi.ssid);
-    } else if (strlen(Config::WIFI_SSID) > 0) {  // Step 2: Check if compiled credentials exist (non-empty)
+    } else if (strlen(Config::WIFI_SSID) >
+               0) {  // Step 2: Check if compiled credentials exist (non-empty)
       Logger::println("WiFi: saving compiled credentials to EEPROM");
       CredentialsManager::saveCredentials(Config::WIFI_SSID, Config::WIFI_PASS);
 
@@ -337,8 +339,7 @@ class NetworkManager {
     wl_status_t status = WiFi.status();
 
     // Track connection failures for auto-clear
-    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST ||
-        status == WL_DISCONNECTED) {
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED) {
       uint32_t now = millis();
 
       // Initialize failure window if this is the first failure
@@ -355,14 +356,13 @@ class NetworkManager {
       // Standard reconnection logic with exponential backoff
       if (now - wifiRetryMs >= wifiRetryIntervalMs) {
         connectionFailureCount++;
-        Logger::printf("WiFi: reconnecting attempt %u (interval=%lus)...",
-                       connectionFailureCount, wifiRetryIntervalMs / 1000);
+        Logger::printf("WiFi: reconnecting attempt %u (interval=%lus)...", connectionFailureCount,
+                       wifiRetryIntervalMs / 1000);
 
         WiFi.disconnect();
-        WiFi.begin(Config::runtimeWiFi.ssid[0] != 0 ? Config::runtimeWiFi.ssid
-                                                      : Config::WIFI_SSID,
+        WiFi.begin(Config::runtimeWiFi.ssid[0] != 0 ? Config::runtimeWiFi.ssid : Config::WIFI_SSID,
                    Config::runtimeWiFi.password[0] != 0 ? Config::runtimeWiFi.password
-                                                         : Config::WIFI_PASS);
+                                                        : Config::WIFI_PASS);
         wifiRetryMs = now;
         wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
 
