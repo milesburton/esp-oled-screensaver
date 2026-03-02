@@ -12,9 +12,11 @@
 #include "CredentialsManager.h"
 #include "DisplayManager.h"
 #include "Logger.h"
+#include "LifeMode.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
+#include "StarfieldMode.h"
 
 class NetworkManager {
  private:
@@ -28,6 +30,8 @@ class NetworkManager {
   BreakoutMode* breakoutMode;
   PacManMode* pacManMode;
   ScreensaverMode* screensaverMode;
+  StarfieldMode* starfieldMode;
+  LifeMode* lifeMode;
 
   bool apMode = false;
   bool apFallbackActive = false;
@@ -228,7 +232,9 @@ class NetworkManager {
             "<a href='/mode?m=weather'>Weather</a> | "
             "<a href='/mode?m=clock'>Clock</a> | "
             "<a href='/mode?m=breakout'>Breakout</a> | "
-            "<a href='/mode?m=pacman'>Pac-Man</a>"
+            "<a href='/mode?m=pacman'>Pac-Man</a> | "
+            "<a href='/mode?m=starfield'>Starfield</a> | "
+            "<a href='/mode?m=life'>Life</a>"
             "</p>"
             "<h3>OLED Configuration</h3>"
             "<p>Try these until border + text align perfectly:</p>"
@@ -283,7 +289,7 @@ class NetworkManager {
         }
         mode.toLowerCase();
         setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
-                      breakoutMode, pacManMode, screensaverMode);
+                      breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode);
       }
 
       http.sendHeader("Location", "/");
@@ -413,12 +419,15 @@ class NetworkManager {
         clockMode(nullptr),
         breakoutMode(nullptr),
         pacManMode(nullptr),
-        screensaverMode(nullptr) {}
+        screensaverMode(nullptr),
+        starfieldMode(nullptr),
+        lifeMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
   void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
-                BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver) {
+                BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver,
+                StarfieldMode* starfield, LifeMode* life) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
@@ -426,6 +435,8 @@ class NetworkManager {
     breakoutMode = breakout;
     pacManMode = pacman;
     screensaverMode = screensaver;
+    starfieldMode = starfield;
+    lifeMode = life;
   }
 
   void begin() {

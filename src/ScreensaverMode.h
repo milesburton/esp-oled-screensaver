@@ -5,25 +5,30 @@
 #include "ClockMode.h"
 #include "Config.h"
 #include "DisplayMode.h"
+#include "LifeMode.h"
 #include "PacManMode.h"
+#include "StarfieldMode.h"
 #include "WeatherMode.h"
 
 class ScreensaverMode : public DisplayMode {
  private:
-  DisplayMode* modes[5];
+  DisplayMode* modes[7];
   uint8_t modeCount;
   uint8_t currentIndex;
   uint32_t elapsedMs;
 
  public:
   ScreensaverMode(ClockMode* clock, BoingMode* boing, WeatherMode* weather,
-                  BreakoutMode* breakout, PacManMode* pacman)
+                  BreakoutMode* breakout, PacManMode* pacman, StarfieldMode* starfield,
+                  LifeMode* life)
       : modeCount(0), currentIndex(0), elapsedMs(0) {
     modes[modeCount++] = clock;
     modes[modeCount++] = boing;
     modes[modeCount++] = weather;
     modes[modeCount++] = breakout;
     modes[modeCount++] = pacman;
+    modes[modeCount++] = starfield;
+    modes[modeCount++] = life;
   }
 
   const char* getName() const override { return "screensaver"; }
