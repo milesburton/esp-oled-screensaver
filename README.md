@@ -122,7 +122,8 @@ See [BUILDING.md](BUILDING.md) for complete build guide.
 
 **OTA Updates**: `http://<device-ip>/update`
 
-- Login with credentials from `secrets.h`
+- Username: `admin`
+- Password: `test-ota-password` (for pre-built releases) or check `secrets.h` for custom builds
 - Upload new `.bin` firmware file
 
 ## Architecture

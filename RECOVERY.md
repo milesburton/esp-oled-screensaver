@@ -39,6 +39,13 @@ If the device was flashed with a pre-built release binary without WiFi credentia
 4. **Restart device**:
    - The device will reboot and connect to your WiFi
 
+5. **Update firmware via OTA (Optional)**:
+   Once your device is connected to WiFi, you can update firmware wirelessly:
+   - Navigate to: `http://<device-ip>/update`
+   - Username: `admin`
+   - Password: `test-ota-password`
+   - Select new `.bin` firmware file and upload
+
 ### Option 2: Serial Flash with Custom Credentials (Advanced)
 
 If AP mode doesn't work or you need to flash again:
