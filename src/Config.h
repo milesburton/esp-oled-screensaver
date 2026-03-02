@@ -11,7 +11,11 @@
 namespace Config {
 // ===== Identity =====
 static constexpr const char* HOSTNAME = "esp-weather-clock";
+<<<<<<< HEAD
 static constexpr const char* FW_VERSION = "platform-1.0.6";
+=======
+static constexpr const char* FW_VERSION = "platform-1.0.4";
+>>>>>>> 279b221 (tests: avoid blocking on Serial in unit test setups to prevent CI hangs)
 
 // ===== WiFi Credentials =====
 static constexpr const char* WIFI_SSID = secrets::WIFI_SSID;
