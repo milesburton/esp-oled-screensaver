@@ -132,8 +132,11 @@ class WeatherMode : public DisplayMode {
 
   void begin() override {
     _state = WxState::IDLE;
-    _synced = false;
-    _lastFetchMs = 0;  // Force fetch on first update()
+    // Preserve cached data across screensaver cycles — only force a re-fetch
+    // if we have never fetched or the data has expired.
+    if (!_synced) {
+      _lastFetchMs = 0;
+    }
   }
 
   void update(U8G2* u8g2, uint32_t deltaMs) override {

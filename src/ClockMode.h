@@ -24,14 +24,19 @@ class ClockMode : public DisplayMode {
   void render(U8G2* u8g2, struct tm* ti) {
     u8g2->clearBuffer();
 
-    // Large HH:MM centred
-    char timeBuf[6];
-    snprintf(timeBuf, sizeof(timeBuf), "%02d%c%02d", ti->tm_hour, _colonVisible ? ':' : ' ',
-             ti->tm_min);
-
+    // Large HH:MM centred — use fixed colon width to avoid jitter
     u8g2->setFont(u8g2_font_logisoso28_tf);
-    int tw = u8g2->getStrWidth(timeBuf);
-    DisplayManager::drawStr(u8g2, (Config::DISPLAY_WIDTH - tw) / 2, 38, timeBuf);
+    char hourBuf[3], minBuf[3];
+    snprintf(hourBuf, sizeof(hourBuf), "%02d", ti->tm_hour);
+    snprintf(minBuf, sizeof(minBuf), "%02d", ti->tm_min);
+    int colonW = u8g2->getStrWidth(":");
+    int numW = u8g2->getStrWidth("00");
+    int totalW = numW + colonW + numW;
+    int startX = (Config::DISPLAY_WIDTH - totalW) / 2;
+    DisplayManager::drawStr(u8g2, startX, 38, hourBuf);
+    if (_colonVisible)
+      DisplayManager::drawStr(u8g2, startX + numW, 38, ":");
+    DisplayManager::drawStr(u8g2, startX + numW + colonW, 38, minBuf);
 
     // Date line centred: "Mon 02 Mar"
     char dateBuf[12];
