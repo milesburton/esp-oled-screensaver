@@ -6,6 +6,7 @@
 #include <ElegantOTA.h>
 
 #include "Config.h"
+#include "CredentialsManager.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "ModeHelper.h"
@@ -18,10 +19,21 @@ class NetworkManager {
   BoingMode* boingMode;
   WeatherMode* weatherMode;
 
+  // AP Mode
+  bool apMode = false;
+  static constexpr const char* AP_SSID = "esp-oled-setup";
+  static constexpr const char* AP_PASS = "setup1234";
+
   // WiFi reconnection state
   uint32_t wifiRetryMs = 0;
   uint32_t wifiRetryIntervalMs = 5000;  // Start at 5s
   static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;  // Cap at 5 min
+
+  // Connection failure tracking for auto-clear EEPROM
+  uint32_t connectionFailureStartMs = 0;
+  uint32_t connectionFailureCount = 0;
+  static constexpr uint32_t CONNECTION_FAILURE_THRESHOLD = 10;
+  static constexpr uint32_t CONNECTION_FAILURE_WINDOW_MS = 5 * 60 * 1000;  // 5 min
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -177,6 +189,77 @@ class NetworkManager {
       ESP.restart();
     });
 
+    // WiFi setup form (AP mode)
+    http.on("/wifi", HTTP_GET, [this]() {
+      String html;
+      html.reserve(1500);
+      html += "<!DOCTYPE html><html><head>";
+      html += "<title>WiFi Setup</title>";
+      html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+      html += "<style>";
+      html += "body { font-family: Arial; margin: 20px; }";
+      html += "input { padding: 8px; width: 100%; margin: 5px 0; box-sizing: border-box; }";
+      html += "button { padding: 10px; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }";
+      html += "button:hover { background: #0056b3; }";
+      html += ".error { color: red; margin: 10px 0; }";
+      html += "</style></head><body>";
+      html += "<h1>WiFi Configuration</h1>";
+      html += "<form method='POST' action='/save-wifi'>";
+      html += "<label>SSID (Network Name):</label>";
+      html += "<input type='text' name='ssid' required><br>";
+      html += "<label>Password:</label>";
+      html += "<input type='password' name='pass' required><br>";
+      html += "<button type='submit'>Save & Connect</button>";
+      html += "</form>";
+      html += "<p><small>Device will restart after saving.</small></p>";
+      html += "</body></html>";
+
+      http.send(200, "text/html", html);
+    });
+
+    // Save WiFi credentials (AP mode form submission)
+    http.on("/save-wifi", HTTP_POST, [this]() {
+      if (!http.hasArg("ssid") || !http.hasArg("pass")) {
+        http.send(400, "text/plain", "Missing SSID or password");
+        return;
+      }
+
+      String ssid = http.arg("ssid");
+      String pass = http.arg("pass");
+
+      if (ssid.length() == 0 || ssid.length() > 31) {
+        http.send(400, "text/plain", "SSID must be 1-31 characters");
+        return;
+      }
+
+      if (pass.length() > 63) {
+        http.send(400, "text/plain", "Password must be 0-63 characters");
+        return;
+      }
+
+      // Save to EEPROM
+      if (CredentialsManager::saveCredentials(ssid.c_str(), pass.c_str())) {
+        http.send(200, "text/html",
+                  "<html><body><h1>Saved!</h1><p>Device will restart and connect to your "
+                  "network...</p></body></html>");
+        delay(500);
+        ESP.restart();
+      } else {
+        http.send(500, "text/plain", "Failed to save credentials");
+      }
+    });
+
+    // Clear EEPROM credentials
+    http.on("/clear-eeprom", HTTP_GET, [this]() {
+      CredentialsManager::clearCredentials();
+      Logger::println("HTTP: EEPROM cleared via /clear-eeprom");
+      http.send(200, "text/html",
+                "<html><body><h1>Cleared!</h1><p>EEPROM credentials cleared. Device will "
+                "restart...</p></body></html>");
+      delay(500);
+      ESP.restart();
+    });
+
     // 404
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
   }
@@ -198,15 +281,45 @@ class NetworkManager {
   }
 
   void begin() {
-    // WiFi setup
-    WiFi.persistent(false);
-    WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
-    WiFi.setSleepMode(WIFI_NONE_SLEEP);
-    WiFi.hostname(Config::HOSTNAME);
-    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+    // Initialize EEPROM
+    CredentialsManager::initialize();
 
-    Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    WiFi.persistent(false);
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);
+
+    // Step 1: Try to load credentials from EEPROM
+    if (CredentialsManager::loadCredentials(Config::runtimeWiFi.ssid,
+                                             sizeof(Config::runtimeWiFi.ssid),
+                                             Config::runtimeWiFi.password,
+                                             sizeof(Config::runtimeWiFi.password))) {
+      // Use EEPROM credentials
+      Logger::println("WiFi: using EEPROM credentials");
+      WiFi.mode(WIFI_STA);
+      WiFi.setAutoReconnect(true);
+      WiFi.hostname(Config::HOSTNAME);
+      WiFi.begin(Config::runtimeWiFi.ssid, Config::runtimeWiFi.password);
+      Logger::printf("WiFi: connecting to '%s'...", Config::runtimeWiFi.ssid);
+    }
+    // Step 2: Check if compiled credentials exist (non-empty)
+    else if (strlen(Config::WIFI_SSID) > 0) {
+      // Save compiled credentials to EEPROM for future boots
+      Logger::println("WiFi: saving compiled credentials to EEPROM");
+      CredentialsManager::saveCredentials(Config::WIFI_SSID, Config::WIFI_PASS);
+
+      WiFi.mode(WIFI_STA);
+      WiFi.setAutoReconnect(true);
+      WiFi.hostname(Config::HOSTNAME);
+      WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+      Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    }
+    // Step 3: No credentials - start AP mode for setup
+    else {
+      Logger::println("WiFi: no credentials found, starting AP mode");
+      apMode = true;
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP(AP_SSID, AP_PASS);
+      Logger::printf("WiFi: AP mode — SSID='%s' ip=192.168.4.1", AP_SSID);
+    }
 
     // HTTP server setup
     setupRoutes();
@@ -221,26 +334,65 @@ class NetworkManager {
     http.handleClient();
     ElegantOTA.loop();
 
-    // Reconnect with exponential backoff on connection failure
+    // If in AP mode, no WiFi reconnection logic needed
+    if (apMode) {
+      return;
+    }
+
     wl_status_t status = WiFi.status();
+
+    // Track connection failures for auto-clear
     if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST ||
         status == WL_DISCONNECTED) {
       uint32_t now = millis();
+
+      // Initialize failure window if this is the first failure
+      if (connectionFailureCount == 0) {
+        connectionFailureStartMs = now;
+      }
+
+      // Reset counter if outside the window
+      if (now - connectionFailureStartMs > CONNECTION_FAILURE_WINDOW_MS) {
+        connectionFailureCount = 0;
+        connectionFailureStartMs = now;
+      }
+
+      // Standard reconnection logic with exponential backoff
       if (now - wifiRetryMs >= wifiRetryIntervalMs) {
-        Logger::printf("WiFi: reconnecting (interval=%lus)...", wifiRetryIntervalMs / 1000);
+        connectionFailureCount++;
+        Logger::printf("WiFi: reconnecting attempt %u (interval=%lus)...",
+                       connectionFailureCount, wifiRetryIntervalMs / 1000);
+
         WiFi.disconnect();
-        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+        WiFi.begin(Config::runtimeWiFi.ssid[0] != 0 ? Config::runtimeWiFi.ssid
+                                                      : Config::WIFI_SSID,
+                   Config::runtimeWiFi.password[0] != 0 ? Config::runtimeWiFi.password
+                                                         : Config::WIFI_PASS);
         wifiRetryMs = now;
-        // Double the interval up to the cap
         wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
+
+        // Auto-clear EEPROM if too many failures
+        if (connectionFailureCount >= CONNECTION_FAILURE_THRESHOLD) {
+          Logger::printf("WiFi: too many failures (%u), clearing EEPROM and restarting",
+                         connectionFailureCount);
+          CredentialsManager::clearCredentials();
+          delay(500);
+          ESP.restart();
+        }
       }
     } else if (status == WL_CONNECTED) {
       // Reset backoff on successful connection
       wifiRetryIntervalMs = 5000;
+      connectionFailureCount = 0;
     }
   }
 
   void logStatus() {
+    if (apMode) {
+      Logger::printf("WiFi: AP mode ip=192.168.4.1 heap=%u", ESP.getFreeHeap());
+      return;
+    }
+
     Logger::printf("WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
                    (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str() : "(unset)",
                    (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
