@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 
@@ -14,6 +15,7 @@
 class NetworkManager {
  private:
   ESP8266WebServer http;
+  DNSServer dnsServer;
   DisplayManager* displayManager;
   StatusMode* statusMode;
   BoingMode* boingMode;
@@ -21,8 +23,8 @@ class NetworkManager {
 
   bool apMode = false;
   bool apFallbackActive = false;
-  static constexpr const char* AP_SSID = "esp-oled-setup";
-  static constexpr const char* AP_PASS = "setup1234";
+  static constexpr const char* AP_SSID = "ESP-OLED-Setup";
+  static constexpr const char* AP_PASS = "";  // Open network for captive portal
 
   uint32_t wifiRetryMs = 0;
   uint32_t wifiRetryIntervalMs = 5000;
@@ -69,8 +71,13 @@ class NetworkManager {
 
     apMode = true;
     WiFi.softAP(AP_SSID, AP_PASS);
-    Logger::printf("WiFi: setup AP active ssid='%s' ip=%s", AP_SSID,
-                   WiFi.softAPIP().toString().c_str());
+    
+    // Start DNS server for captive portal (redirect all domains to this device)
+    dnsServer.start(53, "*", WiFi.softAPIP());
+    
+    Logger::printf("WiFi: captive portal active — SSID='%s' (open) ip=%s mode=%s", AP_SSID,
+                   WiFi.softAPIP().toString().c_str(),
+                   fallbackFromSta ? "AP+STA fallback" : "AP only");
   }
 
   void stopFallbackAPIfConnected() {
@@ -78,15 +85,41 @@ class NetworkManager {
       return;
     }
 
+    dnsServer.stop();
     WiFi.softAPdisconnect(true);
     apMode = false;
     apFallbackActive = false;
     disconnectedStartMs = 0;
-    Logger::println("WiFi: connected, fallback AP disabled");
+    Logger::println("WiFi: connected, captive portal disabled");
   }
 
   void setupRoutes() {
-    http.on("/", HTTP_GET, [this]() {
+    // Captive portal detection routes (for iOS, Android, Windows)
+    http.on("/generate_204", HTTP_GET, [this]() {  // Android
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/hotspot-detect.html", HTTP_GET, [this]() {  // iOS/macOS
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/connecttest.txt", HTTP_GET, [this]() {  // Windows
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    http.on("/redirect", HTTP_GET, [this]() {  // Windows
+      http.sendHeader("Location", "http://" + WiFi.softAPIP().toString() + "/wifi");
+      http.send(302, "text/plain", "");
+    });
+    
+    // Root page
+     http.on("/", HTTP_GET, [this]() {
+      // If in AP mode, redirect to WiFi setup
+      if (apMode) {
+        http.sendHeader("Location", "/wifi");
+        http.send(302, "text/plain", "");
+        return;
+      }
       http.setContentLength(CONTENT_LENGTH_UNKNOWN);
       http.send(200, F("text/html; charset=utf-8"), "");
 
@@ -359,6 +392,11 @@ class NetworkManager {
   void update() {
     http.handleClient();
     ElegantOTA.loop();
+    
+    // Process DNS requests in AP mode for captive portal (wildcard redirect)
+    if (apMode) {
+      dnsServer.processNextRequest();
+    }
 
     if (apMode && !apFallbackActive) {
       return;
