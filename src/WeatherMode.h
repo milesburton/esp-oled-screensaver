@@ -26,7 +26,7 @@ class WeatherMode : public DisplayMode {
   char _lastUpdate[6] = {0};  // "HH:MM\0"
 
   WiFiClient _wifiClient;
-  ESP8266HTTPClient _http;
+  HTTPClient _http;
 
   static const char* wmoDescription(int code) {
     if (code == 0)
