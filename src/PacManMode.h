@@ -32,10 +32,7 @@ class PacManMode : public DisplayMode {
 
   Entity pac;
 
-  struct Ghost {
-    float x, y;
-    float dx, dy;
-    float speed;
+  struct Ghost : public Entity {
     uint8_t scatter;
   };
   Ghost ghosts[4];
@@ -272,10 +269,10 @@ class PacManMode : public DisplayMode {
     resetDots();
     pac = {10.0f, 5.0f, 1.0f, 0.0f, 3.5f};
     float gs = 2.8f;
-    ghosts[0] = {9.0f, 4.0f, -1.0f, 0.0f, gs, 0};
-    ghosts[1] = {11.0f, 4.0f, 1.0f, 0.0f, gs, 0};
-    ghosts[2] = {9.0f, 6.0f, -1.0f, 0.0f, gs, 0};
-    ghosts[3] = {11.0f, 6.0f, 1.0f, 0.0f, gs, 0};
+    ghosts[0] = {{9.0f, 4.0f, -1.0f, 0.0f, gs}, 0};
+    ghosts[1] = {{11.0f, 4.0f, 1.0f, 0.0f, gs}, 0};
+    ghosts[2] = {{9.0f, 6.0f, -1.0f, 0.0f, gs}, 0};
+    ghosts[3] = {{11.0f, 6.0f, 1.0f, 0.0f, gs}, 0};
   }
 
   void update(U8G2* u8g2, uint32_t deltaMs) override {
