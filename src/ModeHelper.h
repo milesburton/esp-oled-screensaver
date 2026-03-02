@@ -8,7 +8,8 @@
 // Switch to a named mode. Returns true if the name was recognised and the mode
 // pointer was non-null.
 inline bool setModeByName(DisplayManager* displayManager, const String& name,
-                          StatusMode* statusMode, BoingMode* boingMode, WeatherMode* weatherMode) {
+                          StatusMode* statusMode, BoingMode* boingMode,
+                          WeatherMode* weatherMode) {
   if (name == "status" && statusMode) {
     displayManager->setMode(statusMode, 400);  // 2.5 FPS
     return true;

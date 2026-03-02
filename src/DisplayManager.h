@@ -25,8 +25,8 @@ class DisplayManager {
         u8g2(nullptr),
         currentMode(nullptr),
         lastFrameMs(0),
-        frameIntervalMs(40),      // Default: ~25 FPS
-        currentRotation(0xFF) {}  // Initialize to invalid value to force first rotation apply
+        frameIntervalMs(40),  // Default: ~25 FPS
+        currentRotation(0) {}
 
   void begin() {
     if (!Config::runtime.oledEnabled)
@@ -60,9 +60,9 @@ class DisplayManager {
 
     uint8_t newRotation = Config::runtime.getU8G2Rotation();
     if (currentRotation != newRotation) {
+      // Map DisplayRotation enum to U8G2 rotation callbacks
       const u8g2_cb_t* rotation_cb[] = {U8G2_R0, U8G2_R1, U8G2_R2, U8G2_R3};
       u8g2->setDisplayRotation(rotation_cb[newRotation]);
-      u8g2->begin();
       currentRotation = newRotation;
       Logger::printf("Display: rotation set to %s", Config::runtime.getRotationName());
     }
