@@ -26,7 +26,7 @@ jobs:
       version: ${{ steps.final-version.outputs.final_version }}
       tag: ${{ steps.final-version.outputs.final_tag }}
       release_notes: ${{ steps.generate-notes.outputs.notes }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,10 +51,10 @@ jobs:
           else
             COMMITS=$(git log $LAST_TAG..HEAD --oneline)
           fi
-          
+
           echo "Recent commits:"
           echo "$COMMITS"
-          
+
           # Check for breaking changes or types
           if echo "$COMMITS" | grep -qE "^.+!:|BREAKING CHANGE"; then
             echo "bump=major" >> $GITHUB_OUTPUT
@@ -72,9 +72,9 @@ jobs:
         run: |
           CURRENT="${{ steps.current-version.outputs.current }}"
           BUMP="${{ steps.bump-type.outputs.bump }}"
-          
+
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          
+
           case $BUMP in
             major)
               MAJOR=$((MAJOR + 1))
@@ -89,7 +89,7 @@ jobs:
               PATCH=$((PATCH + 1))
               ;;
           esac
-          
+
           NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
           echo "new=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "new_tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
@@ -199,22 +199,22 @@ jobs:
           else
             COMMIT_LOG=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %h: %s")
           fi
-          
+
           NOTES=$(cat <<EOF
           ## Firmware Release ${{ steps.final-version.outputs.final_tag }}
-          
+
           ### Version: ${{ steps.final-version.outputs.final_version }} (${{ steps.bump-type.outputs.bump }} bump)
-          
+
           ### Changes
           \`\`\`
           ${COMMIT_LOG}
           \`\`\`
-          
+
           ### Build Information
           - **D1 Mini** (WEMOS D1 mini) - 4MB Flash
           - **NodeMCU** (ESP8266 NodeMCU) - 4MB Flash
           - **Generic** (ESP8266 generic/esp12e) - 1MB Flash
-          
+
           ### Firmware Features
           - Modular display mode system (Clock, Breakout, Pac-Man, Status, Weather)
           - WiFi connectivity with OTA updates
@@ -223,10 +223,10 @@ jobs:
           - Comprehensive system diagnostics on home page
           - EEPROM-based credential storage
           - Display rotation support (0°, 90°, 180°, 270°)
-          
+
           ### Installation
           Use the OTA Update feature at \`http://<device-ip>/update\` or flash directly with esptool.
-          
+
           ### SHA256 Checksums
           Verify binary integrity:
           \`\`\`

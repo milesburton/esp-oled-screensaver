@@ -81,5 +81,5 @@ struct RuntimeConfig {
   uint8_t getU8G2Rotation() const { return static_cast<uint8_t>(rotation); }
 };
 
-extern RuntimeConfig runtime;
+inline RuntimeConfig runtime;
 }  // namespace Config
