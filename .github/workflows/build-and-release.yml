@@ -119,6 +119,7 @@ jobs:
             echo "No version changes to commit"
           else
             git commit -m "chore: bump version to ${{ steps.new-version.outputs.new }}"
+            git pull --rebase origin main || true
             git push origin main || echo "Push failed - continuing with build anyway"
           fi
 
