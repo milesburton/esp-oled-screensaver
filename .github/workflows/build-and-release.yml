@@ -28,18 +28,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check if this is a version bump commit
-        id: is-version-bump
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          if [[ "$COMMIT_MSG" =~ ^chore:\ bump\ version ]]; then
-            echo "skip_bump=true" >> $GITHUB_OUTPUT
-            echo "This is a version bump commit - will proceed with build"
-          else
-            echo "skip_bump=false" >> $GITHUB_OUTPUT
-            echo "This is a feature/fix commit - will bump version first"
-          fi
-
       - name: Get current version
         id: current-version
         run: |
@@ -114,7 +102,7 @@ jobs:
           fi
 
       - name: Update firmware version in Config.h
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'false'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           NEW_VERSION="${{ steps.new-version.outputs.new }}"
           sed -i "s/FW_VERSION = \"platform-[0-9.]*\"/FW_VERSION = \"platform-${NEW_VERSION}\"/" src/Config.h
@@ -122,51 +110,49 @@ jobs:
           grep 'FW_VERSION' src/Config.h
 
       - name: Commit version bump
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'false'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add src/Config.h
-          git commit -m "chore: bump version to ${{ steps.new-version.outputs.new }}" || echo "No changes to commit"
-          git push origin main
-        
-      - name: Stop after version bump
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'false'
-        run: |
-          echo "Version bump committed. Stopping this run - the triggered run will build."
-          exit 0
+          if git diff --cached --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore: bump version to ${{ steps.new-version.outputs.new }}"
+            git push origin main || echo "Push failed - continuing with build anyway"
+          fi
 
       - name: Set up Python
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
       - name: Install PlatformIO
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           python -m pip install --upgrade pip
           pip install platformio==${{ env.PLATFORMIO_VERSION }}
 
       - name: Build firmware for D1 Mini
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           rm -rf .pio build
           pio run -e esp8266_d1_mini
 
       - name: Build firmware for NodeMCU
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           pio run -e esp8266_nodmcu
 
       - name: Build firmware for Generic ESP8266
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           pio run -e esp8266_generic
 
       - name: Copy binaries to release folder
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           mkdir -p release
           cp .pio/build/esp8266_d1_mini/firmware.bin release/esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_esp8266_d1_mini.bin
@@ -175,7 +161,7 @@ jobs:
           ls -lh release/*.bin
 
       - name: Generate SHA256 checksums
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           cd release
           for file in esp8266-oled-experiment_${{ steps.new-version.outputs.new_tag }}_*.bin; do
@@ -185,7 +171,7 @@ jobs:
 
       - name: Generate release notes
         id: generate-notes
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         run: |
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -z "$LAST_TAG" ]; then
@@ -233,7 +219,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload build artifacts
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: firmware-binaries
@@ -241,7 +227,7 @@ jobs:
           retention-days: 30
 
       - name: Create Release
-        if: steps.check-tag.outputs.exists == 'false' && steps.is-version-bump.outputs.skip_bump == 'true'
+        if: steps.check-tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.new-version.outputs.new_tag }}
