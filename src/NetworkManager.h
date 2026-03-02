@@ -6,6 +6,7 @@
 #include <ElegantOTA.h>
 
 #include "Config.h"
+#include "CredentialsManager.h"
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "ModeHelper.h"
@@ -18,9 +19,19 @@ class NetworkManager {
   BoingMode* boingMode;
   WeatherMode* weatherMode;
 
+  bool apMode = false;
+  bool apFallbackActive = false;
+  static constexpr const char* AP_SSID = "esp-oled-setup";
+  static constexpr const char* AP_PASS = "setup1234";
+
   uint32_t wifiRetryMs = 0;
   uint32_t wifiRetryIntervalMs = 5000;
   static constexpr uint32_t WIFI_RETRY_MAX_MS = 5 * 60 * 1000;
+  uint32_t disconnectedStartMs = 0;
+  static constexpr uint32_t AP_FALLBACK_TIMEOUT_MS = 60 * 1000;
+
+  char activeSsid[32] = {0};
+  char activePass[64] = {0};
 
   static const char* wlStatusName(wl_status_t s) {
     switch (s) {
@@ -41,6 +52,37 @@ class NetworkManager {
       default:
         return "UNKNOWN";
     }
+  }
+
+  void startSetupAP(bool fallbackFromSta) {
+    if (apMode) {
+      return;
+    }
+
+    if (fallbackFromSta) {
+      WiFi.mode(WIFI_AP_STA);
+      apFallbackActive = true;
+    } else {
+      WiFi.mode(WIFI_AP);
+      apFallbackActive = false;
+    }
+
+    apMode = true;
+    WiFi.softAP(AP_SSID, AP_PASS);
+    Logger::printf("WiFi: setup AP active ssid='%s' ip=%s", AP_SSID,
+                   WiFi.softAPIP().toString().c_str());
+  }
+
+  void stopFallbackAPIfConnected() {
+    if (!apFallbackActive) {
+      return;
+    }
+
+    WiFi.softAPdisconnect(true);
+    apMode = false;
+    apFallbackActive = false;
+    disconnectedStartMs = 0;
+    Logger::println("WiFi: connected, fallback AP disabled");
   }
 
   void setupRoutes() {
@@ -88,6 +130,7 @@ class NetworkManager {
 
       http.sendContent(
           F("<p><a href='/update'>OTA Update</a></p>"
+            "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
             "<h3>Display Mode</h3>"
             "<p>"
             "<a href='/mode?m=status'>Status</a> | "
@@ -210,6 +253,51 @@ class NetworkManager {
       http.send(302, "text/plain", "");
     });
 
+    http.on("/wifi", HTTP_GET, [this]() {
+      String html;
+      html.reserve(900);
+      html += "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>";
+      html += "<title>WiFi Setup</title></head><body>";
+      html += "<h2>WiFi Setup</h2>";
+      html += "<form method='POST' action='/save-wifi'>";
+      html += "SSID:<br><input name='ssid' maxlength='31' required><br><br>";
+      html += "Password:<br><input name='pass' type='password' maxlength='63'><br><br>";
+      html += "<button type='submit'>Save & Reboot</button></form>";
+      html += "</body></html>";
+      http.send(200, "text/html", html);
+    });
+
+    http.on("/save-wifi", HTTP_POST, [this]() {
+      if (!http.hasArg("ssid") || !http.hasArg("pass")) {
+        http.send(400, "text/plain", "Missing SSID/password");
+        return;
+      }
+
+      String ssid = http.arg("ssid");
+      String pass = http.arg("pass");
+
+      if (ssid.length() == 0 || ssid.length() > 31 || pass.length() > 63) {
+        http.send(400, "text/plain", "Invalid SSID/password length");
+        return;
+      }
+
+      if (!CredentialsManager::saveCredentials(ssid.c_str(), pass.c_str())) {
+        http.send(500, "text/plain", "Failed to save credentials");
+        return;
+      }
+
+      http.send(200, "text/html", "<html><body><h3>Saved. Rebooting...</h3></body></html>");
+      delay(500);
+      ESP.restart();
+    });
+
+    http.on("/clear-eeprom", HTTP_GET, [this]() {
+      CredentialsManager::clearCredentials();
+      http.send(200, "text/plain", "EEPROM credentials cleared, rebooting...");
+      delay(500);
+      ESP.restart();
+    });
+
     http.on("/reboot", HTTP_GET, [this]() {
       http.send(200, "text/plain", "Rebooting...");
       delay(100);
@@ -236,14 +324,29 @@ class NetworkManager {
   }
 
   void begin() {
+    CredentialsManager::initialize();
+
     WiFi.persistent(false);
-    WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
     WiFi.setSleepMode(WIFI_NONE_SLEEP);
     WiFi.hostname(Config::HOSTNAME);
-    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
 
-    Logger::printf("WiFi: connecting to '%s'...", Config::WIFI_SSID);
+    if (CredentialsManager::loadCredentials(activeSsid, sizeof(activeSsid), activePass,
+                                            sizeof(activePass))) {
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(activeSsid, activePass);
+      Logger::printf("WiFi: using EEPROM credentials '%s'", activeSsid);
+    } else if (strlen(Config::WIFI_SSID) > 0) {
+      strncpy(activeSsid, Config::WIFI_SSID, sizeof(activeSsid) - 1);
+      strncpy(activePass, Config::WIFI_PASS, sizeof(activePass) - 1);
+      CredentialsManager::saveCredentials(activeSsid, activePass);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(activeSsid, activePass);
+      Logger::printf("WiFi: using compiled credentials '%s'", activeSsid);
+    } else {
+      Logger::println("WiFi: no credentials found, starting setup AP");
+      startSetupAP(false);
+    }
 
     setupRoutes();
     ElegantOTA.begin(&http, Config::OTA_USER, Config::OTA_PASS);
@@ -257,22 +360,46 @@ class NetworkManager {
     http.handleClient();
     ElegantOTA.loop();
 
+    if (apMode && !apFallbackActive) {
+      return;
+    }
+
     wl_status_t status = WiFi.status();
-    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED) {
+    if (status == WL_CONNECT_FAILED || status == WL_CONNECTION_LOST || status == WL_DISCONNECTED ||
+        status == WL_NO_SSID_AVAIL) {
       uint32_t now = millis();
+
+      if (disconnectedStartMs == 0) {
+        disconnectedStartMs = now;
+      }
+
+      if (!apMode && now - disconnectedStartMs >= AP_FALLBACK_TIMEOUT_MS) {
+        Logger::println("WiFi: offline too long, enabling fallback setup AP");
+        startSetupAP(true);
+      }
+
       if (now - wifiRetryMs >= wifiRetryIntervalMs) {
         Logger::printf("WiFi: reconnecting (interval=%lus)...", wifiRetryIntervalMs / 1000);
         WiFi.disconnect();
-        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASS);
+        WiFi.begin(activeSsid[0] ? activeSsid : Config::WIFI_SSID,
+                   activePass[0] ? activePass : Config::WIFI_PASS);
         wifiRetryMs = now;
         wifiRetryIntervalMs = min(wifiRetryIntervalMs * 2, WIFI_RETRY_MAX_MS);
       }
     } else if (status == WL_CONNECTED) {
       wifiRetryIntervalMs = 5000;
+      disconnectedStartMs = 0;
+      stopFallbackAPIfConnected();
     }
   }
 
   void logStatus() {
+    if (apMode) {
+      Logger::printf("WiFi: AP mode ip=%s heap=%u", WiFi.softAPIP().toString().c_str(),
+                     ESP.getFreeHeap());
+      return;
+    }
+
     Logger::printf("WiFi: %s ip=%s rssi=%d heap=%u", wlStatusName(WiFi.status()),
                    (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString().c_str() : "(unset)",
                    (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0, ESP.getFreeHeap());
