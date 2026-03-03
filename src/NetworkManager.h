@@ -13,6 +13,7 @@
 #include "DisplayManager.h"
 #include "Logger.h"
 #include "LifeMode.h"
+#include "UpdateManager.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
@@ -223,6 +224,17 @@ class NetworkManager {
 
       http.sendContent(F("</ul>"));
 
+      http.sendContent(F("<h3>Auto-Update</h3><ul>"));
+      bool autoUpdateEnabled = UpdateManager::isAutoUpdateEnabled();
+      http.sendContent(F("<li><b>Status:</b> "));
+      http.sendContent(autoUpdateEnabled ? "ENABLED" : "DISABLED");
+      http.sendContent(F("</li><li><b>Channel:</b> "));
+      http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable" : "Beta");
+      http.sendContent(F("</li></ul>"));
+      http.sendContent(F("<p>"));
+      http.sendContent(autoUpdateEnabled ? "<a href='/autoupdate?on=0'>Disable Auto-Update</a>" : "<a href='/autoupdate?on=1'>Enable Auto-Update</a>");
+      http.sendContent(F("</p>"));
+
       http.sendContent(
           F("<p><a href='/update'>OTA Update</a></p>"
             "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
@@ -410,6 +422,25 @@ class NetworkManager {
       ESP.restart();
     });
 
+    http.on("/autoupdate", HTTP_GET, [this]() {
+      if (http.hasArg("on")) {
+        bool enabled = (http.arg("on") == "1");
+        UpdateManager::setAutoUpdateEnabled(enabled);
+        Logger::printf("Auto-update: %s", enabled ? "enabled" : "disabled");
+      }
+      http.sendHeader("Location", "/");
+      http.send(302, "text/plain", "");
+    });
+
+    http.on("/check-update", HTTP_GET, [this]() {
+      String json = "{";
+      json += "\"auto_update_enabled\":" + String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
+      json += "\"channel\":\"" + String(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "stable" : "beta") + "\",";
+      json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\"";
+      json += "}";
+      http.send(200, "application/json", json);
+    });
+
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
   }
 
@@ -447,6 +478,7 @@ class NetworkManager {
 
   void begin() {
     CredentialsManager::initialize();
+    UpdateManager::initialize();
 
     WiFi.persistent(false);
     WiFi.setAutoReconnect(true);
