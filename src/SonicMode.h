@@ -149,10 +149,13 @@ class SonicMode : public DisplayMode {
   int _groundScrollX;
 
   void drawGround(U8G2* u8g2) {
+    // Draw ground line (top of pattern)
     for (int x = 0; x < W; x++) {
       u8g2->drawPixel(x, GROUND_Y);
+      if ((x & 0x0F) == 0) yield();  // Yield every 16 pixels to prevent watchdog reset
     }
 
+    // Draw detail bumps
     static constexpr int NUM_DETAILS = 12;
     static constexpr int DETAIL_SPACING = W / NUM_DETAILS;
     for (int i = 0; i < NUM_DETAILS; i++) {
@@ -163,10 +166,12 @@ class SonicMode : public DisplayMode {
       if (bh >= 3) u8g2->drawPixel(bx, GROUND_Y + 2);
     }
 
+    // Draw ground below (checkerboard pattern)
     for (int y = GROUND_Y + 3; y < H; y++) {
       for (int x = 0; x < W; x += 2) {
         u8g2->drawPixel(x + (y & 1), y);
       }
+      if ((y & 0x03) == 0) yield();  // Yield every 4 rows to prevent watchdog reset
     }
   }
 

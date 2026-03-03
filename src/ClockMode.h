@@ -80,8 +80,11 @@ class ClockMode : public DisplayMode {
   const char* getName() const override { return "clock"; }
 
   void begin() override {
-    configTime(Config::NTP_UTC_OFFSET_HOURS * 3600, 0, "pool.ntp.org", "time.nist.gov");
-    _lastNtpSyncMs = millis();
+    // Only configure NTP if WiFi is connected; will configure on first update if not
+    if (WiFi.status() == WL_CONNECTED) {
+      configTime(Config::NTP_UTC_OFFSET_HOURS * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    }
+    _lastNtpSyncMs = 0;  // Will trigger NTP on first update
     _ntpSynced = false;
     _colonVisible = true;
     _colonToggleMs = millis();
@@ -90,8 +93,13 @@ class ClockMode : public DisplayMode {
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     uint32_t now = millis();
 
-    // Re-sync NTP every hour
-    if (now - _lastNtpSyncMs >= Config::NTP_RESYNC_INTERVAL_MS) {
+    // Configure/re-sync NTP when:
+    // 1. First update (lastNtpSyncMs == 0)
+    // 2. WiFi just connected
+    // 3. Re-sync interval elapsed (every hour)
+    bool shouldSync = (_lastNtpSyncMs == 0) || 
+                      (now - _lastNtpSyncMs >= Config::NTP_RESYNC_INTERVAL_MS);
+    if (shouldSync && WiFi.status() == WL_CONNECTED) {
       configTime(Config::NTP_UTC_OFFSET_HOURS * 3600, 0, "pool.ntp.org", "time.nist.gov");
       _lastNtpSyncMs = now;
     }
