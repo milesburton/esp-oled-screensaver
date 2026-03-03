@@ -1,6 +1,8 @@
 // Hardware: ESP8266 + 128x64 OLED (SSD1306/SH1106)
 // Wiring: SDA=GPIO0, SCL=GPIO2, I2C addr=0x3C
 
+#include <user_interface.h>
+
 #include "BoingMode.h"
 #include "BreakoutMode.h"
 #include "ClockMode.h"
@@ -38,6 +40,8 @@ uint32_t lastStatusLog = 0;
 void setup() {
   Serial.begin(115'200);
   delay(50);
+
+  wifi_status_led_uninstall();  // stop GPIO2 flashing with WiFi activity
 
   Logger::println("");
   Logger::printf("Boot: %s fw=%s", Config::HOSTNAME, Config::FW_VERSION);

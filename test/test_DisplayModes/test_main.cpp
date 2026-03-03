@@ -324,6 +324,33 @@ test(BreakoutModeTest, ScoreEqualsDestroyedBricksWithinFirstClear) {
   assertEqual(mode.getScore(), destroyed);
 }
 
+test(WeatherModeTest, ParseRealResponseExtractsTemp) {
+  WeatherMode mode;
+  mode.testParseResponse(
+      "{\"current_units\":{\"temperature_2m\":\"\\u00b0C\",\"weather_code\":\"wmo code\"},"
+      "\"current\":{\"time\":\"2026-03-03T13:15\",\"interval\":900,"
+      "\"temperature_2m\":13.8,\"weather_code\":3}}");
+  assertTrue(mode.getTempC() > 13.0f);
+  assertTrue(mode.getTempC() < 14.0f);
+}
+
+test(WeatherModeTest, ParseRealResponseExtractsWmoCode) {
+  WeatherMode mode;
+  mode.testParseResponse(
+      "{\"current_units\":{\"temperature_2m\":\"\\u00b0C\",\"weather_code\":\"wmo code\"},"
+      "\"current\":{\"time\":\"2026-03-03T13:15\",\"interval\":900,"
+      "\"temperature_2m\":13.8,\"weather_code\":3}}");
+  assertEqual(mode.getWmoCode(), 3);
+}
+
+test(WeatherModeTest, ParseDoesNotReturnZeroWhenCurrentUnitsPresent) {
+  WeatherMode mode;
+  mode.testParseResponse(
+      "{\"current_units\":{\"temperature_2m\":\"\\u00b0C\",\"weather_code\":\"wmo code\"},"
+      "\"current\":{\"interval\":900,\"temperature_2m\":7.5,\"weather_code\":61}}");
+  assertFalse(mode.getTempC() == 0.0f);
+}
+
 test(WeatherModeTest, BeginPreservesLastFetchWhenSynced) {
   WeatherMode mode;
   mode.setSynced(true);

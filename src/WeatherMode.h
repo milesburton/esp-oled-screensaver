@@ -47,11 +47,17 @@ class WeatherMode : public DisplayMode {
   }
 
   void parseResponse(const String& body) {
-    const char* t = strstr(body.c_str(), "\"temperature_2m\":");
+    // The response contains "current_units" before "current" — skip to the
+    // "current":{...} object so we parse numeric values, not unit strings.
+    const char* base = strstr(body.c_str(), "\"current\":{");
+    if (!base)
+      base = body.c_str();
+
+    const char* t = strstr(base, "\"temperature_2m\":");
     if (t)
       _tempC = atof(t + 17);
 
-    const char* w = strstr(body.c_str(), "\"weather_code\":");
+    const char* w = strstr(base, "\"weather_code\":");
     if (w)
       _wmoCode = atoi(w + 15);
 
@@ -132,8 +138,11 @@ class WeatherMode : public DisplayMode {
  public:
   bool isSynced() const { return _synced; }
   uint32_t getLastFetchMs() const { return _lastFetchMs; }
+  float getTempC() const { return _tempC; }
+  int getWmoCode() const { return _wmoCode; }
   void setSynced(bool s) { _synced = s; }
   void setLastFetchMs(uint32_t t) { _lastFetchMs = t; }
+  void testParseResponse(const String& body) { parseResponse(body); }
 #endif
 
  public:
@@ -141,8 +150,6 @@ class WeatherMode : public DisplayMode {
 
   void begin() override {
     _state = WxState::IDLE;
-    // Preserve cached data across screensaver cycles — only force a re-fetch
-    // if we have never fetched or the data has expired.
     if (!_synced) {
       _lastFetchMs = 0;
     }
