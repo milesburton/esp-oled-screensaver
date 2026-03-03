@@ -210,19 +210,20 @@ class NetworkManager {
       // Diagnostics card
       bool credLoaded = CredentialsManager::hasValidCredentials();
       uint32_t freeHeap = ESP.getFreeHeap();
+      uint32_t maxBlock = ESP.getMaxFreeBlockSize();
       uint32_t sketchSize = ESP.getSketchSize();
       uint8_t flashUsed = static_cast<uint8_t>((sketchSize * 100) / ESP.getFlashChipSize());
-      uint8_t heapPct = static_cast<uint8_t>((freeHeap * 100) / 81920);
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
             "Diagnostics</h2>"
             "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
-      http.sendContent(F("<span class='text-gray-400'>RAM Free</span><span class='text-right'>"));
+      http.sendContent(F("<span class='text-gray-400'>Heap Free</span><span class='text-right'>"));
       http.sendContent(String(freeHeap));
-      http.sendContent(F(" B ("));
-      http.sendContent(String(heapPct));
-      http.sendContent(F("%)</span>"));
+      http.sendContent(F(" B</span>"));
+      http.sendContent(F("<span class='text-gray-400'>Max Block</span><span class='text-right'>"));
+      http.sendContent(String(maxBlock));
+      http.sendContent(F(" B</span>"));
       http.sendContent(F("<span class='text-gray-400'>Flash Used</span><span class='text-right'>"));
       http.sendContent(String(flashUsed));
       http.sendContent(F("%</span>"));
