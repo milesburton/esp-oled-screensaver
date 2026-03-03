@@ -14,11 +14,14 @@
 #include "DisplayManager.h"
 #include "LifeMode.h"
 #include "Logger.h"
+#include "MatrixRainMode.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
+#include "PlasmaMode.h"
+#include "PongMode.h"
 #include "ScreensaverMode.h"
-#include "SonicMode.h"
 #include "StarfieldMode.h"
+#include "TunnelMode.h"
 #include "UpdateChecker.h"
 #include "UpdateManager.h"
 
@@ -36,7 +39,10 @@ class NetworkManager {
   ScreensaverMode* screensaverMode;
   StarfieldMode* starfieldMode;
   LifeMode* lifeMode;
-  SonicMode* sonicMode;
+  MatrixRainMode* matrixMode;
+  PlasmaMode* plasmaMode;
+  TunnelMode* tunnelMode;
+  PongMode* pongMode;
 
   bool apMode = false;
   bool apFallbackActive = false;
@@ -260,7 +266,10 @@ class NetworkManager {
             "<a href='/mode?m=pacman'>Pac-Man</a> | "
             "<a href='/mode?m=starfield'>Starfield</a> | "
             "<a href='/mode?m=life'>Life</a> | "
-            "<a href='/mode?m=sonic'>Sonic</a>"
+            "<a href='/mode?m=matrix'>Matrix</a> | "
+            "<a href='/mode?m=plasma'>Plasma</a> | "
+            "<a href='/mode?m=tunnel'>Tunnel</a> | "
+            "<a href='/mode?m=pong'>Pong</a>"
             "</p>"
             "<h3>OLED Configuration</h3>"
             "<p>Try these until border + text align perfectly:</p>"
@@ -316,7 +325,7 @@ class NetworkManager {
         mode.toLowerCase();
         setModeByName(displayManager, mode, statusMode, boingMode, weatherMode, clockMode,
                       breakoutMode, pacManMode, screensaverMode, starfieldMode, lifeMode,
-                      sonicMode);
+                      matrixMode, plasmaMode, tunnelMode, pongMode);
       }
 
       http.sendHeader("Location", "/");
@@ -541,13 +550,17 @@ class NetworkManager {
         screensaverMode(nullptr),
         starfieldMode(nullptr),
         lifeMode(nullptr),
-        sonicMode(nullptr) {}
+        matrixMode(nullptr),
+        plasmaMode(nullptr),
+        tunnelMode(nullptr),
+        pongMode(nullptr) {}
 
   void setDisplayManager(DisplayManager* dm) { displayManager = dm; }
 
   void setModes(StatusMode* status, BoingMode* boing, WeatherMode* weather, ClockMode* clock,
                 BreakoutMode* breakout, PacManMode* pacman, ScreensaverMode* screensaver,
-                StarfieldMode* starfield, LifeMode* life, SonicMode* sonic) {
+                StarfieldMode* starfield, LifeMode* life, MatrixRainMode* matrix,
+                PlasmaMode* plasma, TunnelMode* tunnel, PongMode* pong) {
     statusMode = status;
     boingMode = boing;
     weatherMode = weather;
@@ -557,7 +570,10 @@ class NetworkManager {
     screensaverMode = screensaver;
     starfieldMode = starfield;
     lifeMode = life;
-    sonicMode = sonic;
+    matrixMode = matrix;
+    plasmaMode = plasma;
+    tunnelMode = tunnel;
+    pongMode = pong;
   }
 
   void begin() {
