@@ -33,6 +33,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install platformio
 
+      - name: Prepare CI secrets header
+        run: |
+          cp src/secrets.h.ci src/secrets.h
+
       - name: Build firmware (${{ matrix.board }})
         run: |
           pio run -e ${{ matrix.board }}
