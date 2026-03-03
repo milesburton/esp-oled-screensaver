@@ -7,7 +7,7 @@
 
 // Sonic the Hedgehog running screensaver.
 // Sonic runs left-to-right across the screen and the ground scrolls to give a
-// sense of speed. Artwork is 24×24 pixel bitmaps drawn with U8G2 drawXBM.
+// sense of speed. Artwork is 24×24 pixel bitmaps drawn with U8G2 drawXBMP.
 // Bytes are stored in flash (PROGMEM) to save RAM.
 
 // clang-format off
@@ -212,9 +212,10 @@ class SonicMode : public DisplayMode {
     if (_frameIdx < FRAME_COUNT && SONIC_FRAMES[_frameIdx] != nullptr && 
         _sonicX + SPR_W > 0 && _sonicX < W) {
       int spriteY = GROUND_Y - FEET_OFFSET;
-      u8g2->drawXBM(_sonicX, spriteY, SPR_W, SPR_H, SONIC_FRAMES[_frameIdx]);
+      u8g2->drawXBMP(_sonicX, spriteY, SPR_W, SPR_H, SONIC_FRAMES[_frameIdx]);
     }
 
+    yield();
     u8g2->sendBuffer();
   }
 };
