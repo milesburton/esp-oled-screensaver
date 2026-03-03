@@ -269,38 +269,39 @@ class NetworkManager {
             "</div></div>"));
 
       // Display modes card
+      const char* currentModeName = (displayManager && displayManager->getCurrentMode())
+                                        ? displayManager->getCurrentMode()->getName()
+                                        : "";
+      auto modeBtn = [&](const char* name, const char* label) {
+        http.sendContent(F("<a href='/mode?m="));
+        http.sendContent(name);
+        bool active = strcmp(name, currentModeName) == 0;
+        http.sendContent(active ? F("' class='px-3 py-1 rounded-lg bg-accent text-gray-950 "
+                                    "text-sm font-semibold'>")
+                                : F("' class='px-3 py-1 rounded-lg bg-gray-700 "
+                                    "hover:bg-gray-600 text-sm'>"));
+        http.sendContent(label);
+        http.sendContent(F("</a>"));
+      };
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
             "Display Mode</h2>"
-            "<div class='flex flex-wrap gap-2'>"
-            "<a href='/mode?m=screensaver' class='px-3 py-1 rounded-lg bg-accent text-gray-950 "
-            "text-sm font-semibold'>Screensaver</a>"
-            "<a href='/mode?m=clock' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Clock</a>"
-            "<a href='/mode?m=boing' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Boing</a>"
-            "<a href='/mode?m=weather' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Weather</a>"
-            "<a href='/mode?m=breakout' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Breakout</a>"
-            "<a href='/mode?m=pacman' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Pac-Man</a>"
-            "<a href='/mode?m=starfield' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Starfield</a>"
-            "<a href='/mode?m=life' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Life</a>"
-            "<a href='/mode?m=matrix' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Matrix</a>"
-            "<a href='/mode?m=plasma' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Plasma</a>"
-            "<a href='/mode?m=tunnel' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Tunnel</a>"
-            "<a href='/mode?m=pong' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Pong</a>"
-            "<a href='/mode?m=status' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Status</a>"
-            "</div></div>"));
+            "<div class='flex flex-wrap gap-2'>"));
+      modeBtn("screensaver", "Screensaver");
+      modeBtn("clock", "Clock");
+      modeBtn("boing", "Boing");
+      modeBtn("weather", "Weather");
+      modeBtn("breakout", "Breakout");
+      modeBtn("pacman", "Pac-Man");
+      modeBtn("starfield", "Starfield");
+      modeBtn("life", "Life");
+      modeBtn("matrix", "Matrix");
+      modeBtn("plasma", "Plasma");
+      modeBtn("tunnel", "Tunnel");
+      modeBtn("pong", "Pong");
+      modeBtn("status", "Status");
+      http.sendContent(F("</div></div>"));
 
       // OLED config card
       http.sendContent(
