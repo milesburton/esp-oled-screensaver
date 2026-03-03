@@ -7,13 +7,13 @@
 #include "../../src/ClockMode.h"
 #include "../../src/DisplayMode.h"
 #include "../../src/LifeMode.h"
-#include "../../src/PacManMode.h"
 #include "../../src/MatrixRainMode.h"
+#include "../../src/PacManMode.h"
 #include "../../src/PlasmaMode.h"
 #include "../../src/PongMode.h"
-#include "../../src/TunnelMode.h"
 #include "../../src/StarfieldMode.h"
 #include "../../src/StatusMode.h"
+#include "../../src/TunnelMode.h"
 #include "../../src/UpdateChecker.h"
 #include "../../src/WeatherMode.h"
 
@@ -112,6 +112,37 @@ test(LifeModeTest, BeginDoesNotCrash) {
   assertTrue(true);
 }
 
+test(LifeModeTest, BitfieldSetAndGet) {
+  LifeMode mode;
+  mode.begin();
+  mode.setCellPublic(0, 0, false);
+  assertEqual(mode.getCellPublic(0, 0), false);
+  mode.setCellPublic(0, 0, true);
+  assertEqual(mode.getCellPublic(0, 0), true);
+}
+
+test(LifeModeTest, BitfieldNoCrosstalk) {
+  LifeMode mode;
+  mode.begin();
+  mode.setCellPublic(0, 0, true);
+  mode.setCellPublic(1, 0, false);
+  assertEqual(mode.getCellPublic(0, 0), true);
+  assertEqual(mode.getCellPublic(1, 0), false);
+}
+
+test(LifeModeTest, BitfieldWordBoundary) {
+  LifeMode mode;
+  mode.begin();
+  mode.setCellPublic(31, 0, true);
+  mode.setCellPublic(32, 0, false);
+  assertEqual(mode.getCellPublic(31, 0), true);
+  assertEqual(mode.getCellPublic(32, 0), false);
+  mode.setCellPublic(31, 0, false);
+  mode.setCellPublic(32, 0, true);
+  assertEqual(mode.getCellPublic(31, 0), false);
+  assertEqual(mode.getCellPublic(32, 0), true);
+}
+
 test(DisplayModeTest, NamesAreLowercase) {
   StatusMode status;
   BoingMode boing;
@@ -154,10 +185,9 @@ test(DisplayModeTest, NamesAreUnique) {
   TunnelMode tunnel;
   PongMode pong;
 
-  const char* names[] = {status.getName(),   boing.getName(),    weather.getName(),
-                         clock.getName(),    breakout.getName(), pacman.getName(),
-                         starfield.getName(), life.getName(),    matrix.getName(),
-                         plasma.getName(),   tunnel.getName(),   pong.getName()};
+  const char* names[] = {status.getName(),   boing.getName(),  weather.getName(),   clock.getName(),
+                         breakout.getName(), pacman.getName(), starfield.getName(), life.getName(),
+                         matrix.getName(),   plasma.getName(), tunnel.getName(),    pong.getName()};
   static constexpr int N = 12;
   for (int i = 0; i < N; i++)
     for (int j = i + 1; j < N; j++)
@@ -757,7 +787,6 @@ test(PongModeTest, BallStaysInBoundsAfterManyFrames) {
 test(PongModeTest, PaddleHeightIsPositive) {
   assertTrue(PongMode::getPaddleH() > 0);
 }
-
 
 void setup() {
   Serial.begin(115200);
