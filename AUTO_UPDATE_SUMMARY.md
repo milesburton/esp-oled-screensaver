@@ -9,6 +9,7 @@ All three phases of the auto-update system have been successfully implemented, t
 ## What Was Implemented
 
 ### Phase 1: Settings Persistence ✅
+
 **Commit:** c82eec4
 
 - **UpdateManager.h** — EEPROM-backed settings module
@@ -23,6 +24,7 @@ All three phases of the auto-update system have been successfully implemented, t
   - Web UI button in home page auto-update section
 
 ### Phase 2: Periodic Update Checking ✅
+
 **Commit:** ac1778d
 
 - **UpdateChecker.h** — GitHub API poller
@@ -39,6 +41,7 @@ All three phases of the auto-update system have been successfully implemented, t
   - No manual steps needed
 
 ### Phase 3: Automatic Download & Flash ✅
+
 **Commit:** ce2eeb3
 
 - **AutoUpdater.h** — Binary download + OTA flash
@@ -120,7 +123,8 @@ All three phases of the auto-update system have been successfully implemented, t
 
 ### 1. Enable Auto-Update (User)
 
-Navigate to **http://device-ip** in web browser:
+Navigate to **<http://device-ip>** in web browser:
+
 - Scroll to "Auto-Update" section
 - Click "Enable Auto-Update"
 - Device will check every 6 hours
@@ -132,6 +136,7 @@ curl http://device-ip/update-status | jq
 ```
 
 Response shows:
+
 - Current firmware version
 - Update available? (true/false)
 - Available version if applicable
@@ -140,6 +145,7 @@ Response shows:
 ### 3. Test Update Check
 
 Force an immediate check:
+
 ```bash
 curl http://device-ip/force-check
 # Then wait 5 seconds and check status
@@ -149,6 +155,7 @@ curl http://device-ip/update-status | jq '.update_available'
 ### 4. Automatic Update (No User Action Needed)
 
 Once enabled:
+
 1. Device checks GitHub every 6 hours
 2. If new version found, automatically downloads
 3. Flashes firmware while running
@@ -221,6 +228,7 @@ platformio test -e esp8266_d1_mini
 ```
 
 Tests cover:
+
 - Version comparison logic (major/minor/patch)
 - GitHub release JSON parsing
 - Tag name parsing (with/without 'v' prefix)
@@ -229,6 +237,7 @@ Tests cover:
 ### Integration Testing
 
 Manual testing checklist:
+
 1. ✅ Enable auto-update via web UI
 2. ✅ Verify setting persists after reboot
 3. ✅ Force update check and verify detection
@@ -242,16 +251,19 @@ Manual testing checklist:
 ## Next Steps (Optional Enhancements)
 
 ### High Priority
+
 - [ ] SHA256 validation (requires checksum in manifest or release notes)
 - [ ] Multi-board support (currently hardcoded to d1_mini)
 - [ ] Config.h parameter extraction (board from Config not hardcoded)
 
 ### Medium Priority
+
 - [ ] Beta channel support (separate releases/ tags)
 - [ ] Staged rollout (only % of devices update)
 - [ ] Telemetry (report update success to server)
 
 ### Low Priority
+
 - [ ] Rollback on failure (nested OTA partitions)
 - [ ] Pause/resume downloads
 - [ ] Compression (deflate on firmware.bin)
@@ -275,6 +287,7 @@ Manual testing checklist:
 **Primary Reference:** [AUTO_UPDATE.md](./AUTO_UPDATE.md)
 
 Covers:
+
 - Architecture overview
 - User guide (how to enable/use)
 - API reference (all routes)
@@ -288,6 +301,7 @@ Covers:
 ## Status: Production Ready ✅
 
 The auto-update system is fully functional and ready for public use. All components:
+
 - ✅ Compile without errors
 - ✅ Integrate seamlessly with existing code
 - ✅ Include comprehensive error handling
@@ -295,6 +309,7 @@ The auto-update system is fully functional and ready for public use. All compone
 - ✅ Follow security best practices
 
 **To activate:**
+
 1. **Make GitHub repo public** (setting → danger zone → change visibility)
 2. **Tag a release**: `git tag v1.0.45 && git push origin v1.0.45`
 3. **GitHub Actions automatically builds** and uploads firmware

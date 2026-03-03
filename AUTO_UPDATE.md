@@ -5,6 +5,7 @@
 The ESP8266 OLED Screensaver now includes a **complete over-the-air (OTA) auto-update system** that automatically checks for firmware updates and applies them with zero user intervention.
 
 **Key Features:**
+
 - ✅ **Secure by default**: Auto-update is OFF; users must explicitly enable it
 - ✅ **No credentials embedded**: Uses public GitHub Releases API (no tokens in firmware)
 - ✅ **Persistent settings**: Auto-update preference persists across firmware upgrades (EEPROM)
@@ -74,12 +75,14 @@ New version available? (version comparison)
 ### Enable Auto-Update (User)
 
 **Option 1: Web UI**
+
 1. Browse to `http://device-ip/` (or `http://device-ip:80/`)
 2. Scroll to **Auto-Update** section
 3. Click **"Enable Auto-Update"**
 4. Device will check every 6 hours for new firmware
 
 **Option 2: Telnet/Serial Console**
+
 ```
 Device logs will show:
   UpdateMgr: auto-update ENABLED
@@ -88,6 +91,7 @@ Device logs will show:
 ```
 
 **Option 3: curl / API**
+
 ```bash
 # Enable auto-update
 curl "http://device-ip/autoupdate?on=1"
@@ -99,6 +103,7 @@ curl "http://device-ip/update-status" | jq
 ### Check Update Status
 
 **JSON API Response:**
+
 ```bash
 $ curl "http://device-ip/update-status" | jq
 {
@@ -112,6 +117,7 @@ $ curl "http://device-ip/update-status" | jq
 ```
 
 **Possible updater states:**
+
 - `IDLE` — Waiting for next check
 - `DOWNLOADING` — Fetching binary from GitHub (shows progress %)
 - `FLASHING` — Writing to flash partition
@@ -123,6 +129,7 @@ $ curl "http://device-ip/update-status" | jq
 ### Manual Update Check
 
 Force an immediate update check (ignores 6-hour interval):
+
 ```bash
 curl "http://device-ip/force-check"
 # Response: {"status":"check triggered"}
@@ -147,6 +154,7 @@ Device will still show web UI option to manually run `/update` (ElegantOTA).
 Versions follow **semantic versioning**: `major.minor.patch`
 
 Examples:
+
 - `1.0.45` > `1.0.44` ✓ (patch bump)
 - `1.1.0` > `1.0.99` ✓ (minor bump)
 - `2.0.0` > `1.99.99` ✓ (major bump)
@@ -157,6 +165,7 @@ Examples:
 Device fetches: `https://api.github.com/repos/milesburton/esp-oled-screensaver/releases/latest`
 
 Parses JSON:
+
 ```json
 {
   "tag_name": "v1.0.45",
@@ -169,6 +178,7 @@ Parses JSON:
 ### EEPROM Layout
 
 **Bytes 128–191** (reserved for UpdateManager settings):
+
 - Byte 128: Magic number (0xBB = valid)
 - Byte 129: Schema version (1)
 - Byte 130: Auto-update enabled flag (1 = yes, 0 = no)
@@ -200,6 +210,7 @@ Survives firmware flashes because OTA update preserves EEPROM.
 ### Automated (GitHub Actions)
 
 1. **Tag a release** on GitHub:
+
    ```bash
    git tag v1.0.45
    git push origin v1.0.45
@@ -234,6 +245,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 **Cause:** GitHub API rate limiting (60 unauthenticated requests per hour per IP)
 
 **Solution:**
+
 - Wait 1 hour, device will retry
 - Or manually force-check less frequently
 - Consider adding GitHub token (optional enhancement)
@@ -243,6 +255,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 **Cause:** Device flash partition too full
 
 **Solution:**
+
 - Delete cached data or logs if applicable
 - Or use smaller firmware (optimize code)
 - ESP8266 requires ~256KB free for update partition swap
@@ -252,6 +265,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 **Cause:** Flash write error (hardware issue, corruption, or power loss)
 
 **Solution:**
+
 - Try manual update via `/update` (ElegantOTA)
 - If persistent, may indicate hardware failure
 - Consider chip replacement
@@ -261,6 +275,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 **Cause:** Watchdog timer reset (firmware taking too long)
 
 **Solution:**
+
 - Ensure `yield()` calls in tight loops (AutoUpdater does this)
 - Reduce update check frequency if needed
 - Check logs via Telnet for resource warnings
@@ -280,6 +295,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 ### JSON Response Examples
 
 #### `/update-status` (downloading)
+
 ```json
 {
   "auto_update_enabled": true,
@@ -292,6 +308,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 ```
 
 #### `/update-status` (idle, no update)
+
 ```json
 {
   "auto_update_enabled": true,
@@ -323,6 +340,7 @@ ls -lh .pio/build/esp8266_d1_mini/firmware.bin
 ## License & Disclaimer
 
 This auto-update system is provided as-is. Users assume responsibility for:
+
 - Reviewing firmware changes before enabling auto-update
 - Ensuring adequate power supply during updates
 - Testing on a single device before deployment to production
