@@ -11,16 +11,12 @@
 #include <cstdio>
 
 namespace UpdateChecker {
-// Advance past any non-numeric prefix (e.g. "v", "platform-") so sscanf can
-// parse the numeric semver part regardless of the prefix used.
 inline const char* skipVersionPrefix(const char* s) {
   while (*s && !isdigit(static_cast<unsigned char>(*s)))
     ++s;
   return s;
 }
 
-// Simple version comparison: returns true if remote > local.
-// Accepts any prefix before the numeric part (e.g. "v1.0.48", "platform-1.0.47").
 inline bool isNewerVersion(const char* remoteVersionStr, const char* localVersionStr) {
   int rMajor = 0, rMinor = 0, rPatch = 0;
   int lMajor = 0, lMinor = 0, lPatch = 0;
@@ -42,16 +38,13 @@ struct ManifestEntry {
   char sha256[65];
 };
 
-static constexpr uint32_t CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;  // 6 hours
-static constexpr uint32_t FORCE_CHECK_COOLDOWN_MS = 60 * 1000;     // 1 minute between forced checks
-static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;                 // 10 seconds
+static constexpr uint32_t CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+static constexpr uint32_t FORCE_CHECK_COOLDOWN_MS = 60 * 1000;
+static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;
 
-// GitHub API endpoint for latest release (no auth needed for public repos)
-// Returns JSON with asset URLs, version info, etc.
 static constexpr const char* GITHUB_API_URL =
     "https://api.github.com/repos/milesburton/esp-oled-screensaver/releases/latest";
 
-// Will be set by caller; indicates if update is available
 static bool updateAvailable = false;
 static char availableVersionStr[16] = {0};
 static char downloadUrlStr[256] = {0};
@@ -65,19 +58,12 @@ inline void reset() {
 }
 
 inline bool shouldCheck(uint32_t nowMs) {
-  if (!UpdateManager::isAutoUpdateEnabled()) {
-    return false;
-  }
-  if (lastCheckMs == 0) {
-    return true;  // First check
-  }
+  if (!UpdateManager::isAutoUpdateEnabled()) return false;
+  if (lastCheckMs == 0) return true;
   return (nowMs - lastCheckMs >= CHECK_INTERVAL_MS);
 }
 
-// Minimal JSON parser for GitHub API release response
-// Looks for: tag_name (version) and browser_download_url (asset URL) for firmware.bin
 inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
-  // Extract tag_name (GitHub version tag like "v1.0.45")
   int pos = json.indexOf("\"tag_name\":\"");
   if (pos < 0)
     return false;
@@ -87,16 +73,13 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
     return false;
 
   String tagName = json.substring(pos, end);
-  // Remove 'v' prefix if present: "v1.0.45" → "1.0.45"
   if (tagName[0] == 'v') {
     tagName = tagName.substring(1);
   }
   tagName.toCharArray(entry.version, 16);
 
-  // For now, hardcode board (manifest has "d1_mini")
   snprintf(entry.board, sizeof(entry.board), "%s", "d1_mini");
 
-  // Find the first firmware.bin asset URL
   pos = json.indexOf("\"browser_download_url\":\"");
   if (pos < 0)
     return false;
@@ -105,16 +88,11 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
   if (end < 0 || end - pos >= 256)
     return false;
   json.substring(pos, end).toCharArray(entry.download_url, 256);
-
-  // SHA256 not available in GitHub API, would need to add to release body or separate file
-  // For now, use placeholder (can enhance later with checksum file)
   entry.sha256[0] = '\0';
 
   return true;
 }
 
-// Fetch latest release from GitHub API, compare version, set updateAvailable flag.
-// Always runs — callers are responsible for deciding whether to invoke this.
 inline void fetchAndCompare() {
   uint32_t now = millis();
 
@@ -128,7 +106,6 @@ inline void fetchAndCompare() {
     return;
   }
 
-  // GitHub API requires User-Agent header
   http.addHeader("User-Agent", "ESP8266-OLED-Screensaver");
 
   int httpCode = http.GET();
@@ -156,16 +133,6 @@ inline void fetchAndCompare() {
     return;
   }
 
-  // Check if this is for our board
-  const char* expectedBoard = "d1_mini";  // TODO: derive from Config
-  if (strcmp(entry.board, expectedBoard) != 0) {
-    Logger::printf("UpdateChecker: board mismatch (expected %s, got %s)", expectedBoard,
-                   entry.board);
-    lastCheckMs = now;
-    return;
-  }
-
-  // Check version
   if (isNewerVersion(entry.version, Config::FW_VERSION)) {
     updateAvailable = true;
     strncpy(availableVersionStr, entry.version, sizeof(availableVersionStr) - 1);
@@ -180,7 +147,6 @@ inline void fetchAndCompare() {
   lastCheckMs = now;
 }
 
-// Called from main loop; honours the 6-hour interval and the enabled flag.
 inline void checkForUpdates() {
   if (!shouldCheck(millis())) {
     return;
@@ -194,8 +160,6 @@ inline void checkForUpdates() {
   fetchAndCompare();
 }
 
-// Force a manual check regardless of interval or auto-update setting (for /force-check route).
-// Enforces a 1-minute cooldown to prevent hammering the GitHub API.
 inline void forceCheck() {
   if (WiFi.status() != WL_CONNECTED) {
     Logger::println("UpdateChecker: WiFi not connected, cannot check");

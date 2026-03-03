@@ -438,6 +438,9 @@ class NetworkManager {
         bool enabled = (http.arg("on") == "1");
         UpdateManager::setAutoUpdateEnabled(enabled);
         Logger::printf("Auto-update: %s", enabled ? "enabled" : "disabled");
+        if (enabled) {
+          UpdateChecker::reset();
+        }
       }
       http.sendHeader("Location", "/");
       http.send(302, "text/plain", "");
