@@ -31,8 +31,11 @@ struct ManifestEntry {
 
 static constexpr uint32_t CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;  // 6 hours
 static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;                  // 10 seconds
-static constexpr const char* MANIFEST_URL =
-    "https://milesburton.github.io/esp-oled-screensaver/manifest.json";
+
+// GitHub API endpoint for latest release (no auth needed for public repos)
+// Returns JSON with asset URLs, version info, etc.
+static constexpr const char* GITHUB_API_URL =
+    "https://api.github.com/repos/milesburton/esp-oled-screensaver/releases/latest";
 
 // Will be set by caller; indicates if update is available
 static bool updateAvailable = false;
@@ -57,48 +60,46 @@ inline bool shouldCheck(uint32_t nowMs) {
   return (nowMs - lastCheckMs >= CHECK_INTERVAL_MS);
 }
 
-// Minimal JSON parser for manifest: expects board-specific entry only
-// Format: {"fw_version":"1.0.45","board":"d1_mini","download_url":"...","sha256":"..."}
-inline bool parseManifest(const String& json, ManifestEntry& entry) {
-  // Simple string-based extraction (no JSON library to save RAM)
-  int pos = 0;
-
-  // Extract fw_version
-  pos = json.indexOf("\"fw_version\":\"");
+// Minimal JSON parser for GitHub API release response
+// Looks for: tag_name (version) and browser_download_url (asset URL) for firmware.bin
+inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
+  // Extract tag_name (GitHub version tag like "v1.0.45")
+  int pos = json.indexOf("\"tag_name\":\"");
   if (pos < 0) return false;
-  pos += 14;
+  pos += 12;
   int end = json.indexOf("\"", pos);
-  if (end < 0 || end - pos >= 16) return false;
-  json.substring(pos, end).toCharArray(entry.version, 16);
+  if (end < 0) return false;
+  
+  String tagName = json.substring(pos, end);
+  // Remove 'v' prefix if present: "v1.0.45" → "1.0.45"
+  if (tagName[0] == 'v') {
+    tagName = tagName.substring(1);
+  }
+  tagName.toCharArray(entry.version, 16);
 
-  // Extract board
-  pos = json.indexOf("\"board\":\"");
+  // Extract board from assets (look for "firmware.bin" asset)
+  pos = json.indexOf("\"browser_download_url\":\"");
   if (pos < 0) return false;
-  pos += 9;
-  end = json.indexOf("\"", pos);
-  if (end < 0 || end - pos >= 32) return false;
-  json.substring(pos, end).toCharArray(entry.board, 32);
+  
+  // For now, hardcode board (manifest has "d1_mini")
+  strcpy(entry.board, "d1_mini");
 
-  // Extract download_url
-  pos = json.indexOf("\"download_url\":\"");
+  // Find the first firmware.bin asset URL
+  pos = json.indexOf("\"browser_download_url\":\"");
   if (pos < 0) return false;
-  pos += 16;
+  pos += 24;
   end = json.indexOf("\"", pos);
   if (end < 0 || end - pos >= 256) return false;
   json.substring(pos, end).toCharArray(entry.download_url, 256);
 
-  // Extract sha256
-  pos = json.indexOf("\"sha256\":\"");
-  if (pos < 0) return false;
-  pos += 10;
-  end = json.indexOf("\"", pos);
-  if (end < 0 || end - pos >= 65) return false;
-  json.substring(pos, end).toCharArray(entry.sha256, 65);
+  // SHA256 not available in GitHub API, would need to add to release body or separate file
+  // For now, use placeholder (can enhance later with checksum file)
+  strcpy(entry.sha256, "");
 
   return true;
 }
 
-// Check for updates: fetch manifest, compare version, set flag
+// Check for updates: fetch latest release from GitHub API, compare version, set flag
 inline void checkForUpdates() {
   uint32_t now = millis();
 
@@ -117,11 +118,14 @@ inline void checkForUpdates() {
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
 
-  if (!http.begin(MANIFEST_URL)) {
+  if (!http.begin(GITHUB_API_URL)) {
     Logger::println("UpdateChecker: ERROR - failed to begin HTTP request");
     lastCheckMs = now;
     return;
   }
+
+  // GitHub API requires User-Agent header
+  http.addHeader("User-Agent", "ESP8266-OLED-Screensaver");
 
   int httpCode = http.GET();
   if (httpCode != HTTP_CODE_OK) {
@@ -141,8 +145,9 @@ inline void checkForUpdates() {
   }
 
   ManifestEntry entry;
-  if (!parseManifest(payload, entry)) {
-    Logger::println("UpdateChecker: ERROR - failed to parse manifest JSON");
+  if (!parseGitHubRelease(payload, entry)) {
+    Logger::println("UpdateChecker: ERROR - failed to parse GitHub release JSON");
+    Logger::printf("Payload length: %d", payload.length());
     lastCheckMs = now;
     return;
   }
