@@ -15,6 +15,7 @@
 #include "LifeMode.h"
 #include "UpdateManager.h"
 #include "UpdateChecker.h"
+#include "AutoUpdater.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
@@ -459,6 +460,59 @@ class NetworkManager {
       http.send(200, "application/json", "{\"status\":\"check triggered\"}");
     });
 
+    http.on("/update-status", HTTP_GET, [this]() {
+      // Report current auto-update status in JSON format
+      String json = "{";
+      json += "\"auto_update_enabled\":" + String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
+      json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\",";
+      json += "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false") + ",";
+
+      // Map updater state to string
+      const char* stateStr = "UNKNOWN";
+      switch (AutoUpdater::getState()) {
+        case AutoUpdater::UpdateState::IDLE:
+          stateStr = "IDLE";
+          break;
+        case AutoUpdater::UpdateState::DOWNLOADING:
+          stateStr = "DOWNLOADING";
+          break;
+        case AutoUpdater::UpdateState::VALIDATING:
+          stateStr = "VALIDATING";
+          break;
+        case AutoUpdater::UpdateState::FLASHING:
+          stateStr = "FLASHING";
+          break;
+        case AutoUpdater::UpdateState::VERIFYING:
+          stateStr = "VERIFYING";
+          break;
+        case AutoUpdater::UpdateState::SUCCESS:
+          stateStr = "SUCCESS";
+          break;
+        case AutoUpdater::UpdateState::ERROR_DOWNLOAD:
+          stateStr = "ERROR_DOWNLOAD";
+          break;
+        case AutoUpdater::UpdateState::ERROR_UNPACK:
+          stateStr = "ERROR_UNPACK";
+          break;
+        case AutoUpdater::UpdateState::ERROR_FLASH:
+          stateStr = "ERROR_FLASH";
+          break;
+        case AutoUpdater::UpdateState::ERROR_ABORT:
+          stateStr = "ERROR_ABORT";
+          break;
+      }
+
+      json += "\"updater_state\":\"" + String(stateStr) + "\",";
+      json += "\"update_progress\":" + String(AutoUpdater::getProgress());
+
+      if (UpdateChecker::isUpdateAvailable()) {
+        json += ",\"available_version\":\"" + String(UpdateChecker::getAvailableVersion()) + "\"";
+      }
+
+      json += "}";
+      http.send(200, "application/json", json);
+    });
+
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
   }
 
@@ -534,6 +588,9 @@ class NetworkManager {
 
     // Check for available updates periodically (every 6 hours if enabled)
     UpdateChecker::checkForUpdates();
+
+    // Attempt automatic update if available and enabled
+    AutoUpdater::attemptAutoUpdate();
 
     // Process DNS requests in AP mode for captive portal (wildcard redirect)
     if (apMode) {
