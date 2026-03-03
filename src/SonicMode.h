@@ -1,8 +1,10 @@
 #pragma once
 
 #include <pgmspace.h>
+#include <math.h>
 
 #include "Config.h"
+#include "DisplayManager.h"
 #include "DisplayMode.h"
 
 // Sonic the Hedgehog running screensaver.
@@ -135,56 +137,73 @@ class SonicMode : public DisplayMode {
   static constexpr int W = Config::DISPLAY_WIDTH;
   static constexpr int H = Config::DISPLAY_HEIGHT;
   static constexpr int GROUND_Y = 52;
+  static constexpr int LOOP_R = 18;
+  static constexpr int LOOP_CX = 84;
+  static constexpr int LOOP_CY = GROUND_Y - LOOP_R;
   static constexpr int SPR_W = 24;
   static constexpr int SPR_H = 24;
+  static constexpr int FEET_X_OFFSET = 12;
   static constexpr int FEET_OFFSET = SPR_H - 4;
   static constexpr int RUN_SPEED_PPS = 90;
   static constexpr int FRAME_COUNT = 4;
   static constexpr uint32_t FRAME_MS = 80;
-  static constexpr int GROUND_SCROLL_PPS = 120;
+  static constexpr int START_FOOT_X = -FEET_X_OFFSET;
+  static constexpr float PI_F = 3.14159265f;
 
-  int _sonicX;
+  int _spriteX;
+  int _spriteY;
   uint8_t _frameIdx;
   uint32_t _frameAccMs;
-  int _groundScrollX;
 
-  void drawGround(U8G2* u8g2) {
-    // Draw ground line (top of pattern)
-    for (int x = 0; x < W; x++) {
-      u8g2->drawPixel(x, GROUND_Y);
-      if ((x & 0x0F) == 0) yield();  // Yield every 16 pixels to prevent watchdog reset
+  int32_t _pathPosQ8;
+
+  static int approachLen() { return (LOOP_CX - LOOP_R) - START_FOOT_X; }
+  static int loopLen() { return static_cast<int>(LOOP_R * PI_F * 3.0f); }
+  static int exitLen() { return (W + FEET_X_OFFSET) - (LOOP_CX + LOOP_R); }
+  static int totalLen() { return approachLen() + loopLen() + exitLen(); }
+
+  void computeFootPosition(int s, int& footX, int& footY) {
+    if (s < approachLen()) {
+      footX = START_FOOT_X + s;
+      footY = GROUND_Y;
+      return;
     }
 
-    // Draw detail bumps
-    static constexpr int NUM_DETAILS = 12;
-    static constexpr int DETAIL_SPACING = W / NUM_DETAILS;
-    for (int i = 0; i < NUM_DETAILS; i++) {
-      int bx = ((i * DETAIL_SPACING) - _groundScrollX + W * 2) % W;
-      int bh = (i % 3 == 0) ? 2 : ((i % 3 == 1) ? 1 : 3);
-      u8g2->drawPixel(bx, GROUND_Y + 1);
-      if (bh >= 2) u8g2->drawPixel(bx + 1, GROUND_Y + 1);
-      if (bh >= 3) u8g2->drawPixel(bx, GROUND_Y + 2);
+    int ls = s - approachLen();
+    if (ls < loopLen()) {
+      float t = static_cast<float>(ls) / static_cast<float>(loopLen());
+      float angle = PI_F - (t * (3.0f * PI_F));
+      footX = LOOP_CX + static_cast<int>(LOOP_R * cosf(angle));
+      footY = LOOP_CY + static_cast<int>(LOOP_R * sinf(angle));
+      return;
     }
 
-    // Draw ground below (checkerboard pattern)
-    for (int y = GROUND_Y + 3; y < H; y++) {
-      for (int x = 0; x < W; x += 2) {
-        u8g2->drawPixel(x + (y & 1), y);
-      }
-      if ((y & 0x03) == 0) yield();  // Yield every 4 rows to prevent watchdog reset
+    int es = ls - loopLen();
+    footX = (LOOP_CX + LOOP_R) + es;
+    footY = GROUND_Y;
+  }
+
+  void drawScene(U8G2* u8g2) {
+    DisplayManager::drawHLine(u8g2, 0, GROUND_Y, W);
+    DisplayManager::drawCircle(u8g2, LOOP_CX, LOOP_CY, LOOP_R);
+    DisplayManager::drawCircle(u8g2, LOOP_CX, LOOP_CY, LOOP_R - 2);
+
+    for (int x = 0; x < W; x += 8) {
+      DisplayManager::drawVLine(u8g2, x, GROUND_Y + 2, H - (GROUND_Y + 2));
     }
   }
 
  public:
-  SonicMode() : _sonicX(0), _frameIdx(0), _frameAccMs(0), _groundScrollX(0) {}
+  SonicMode() : _spriteX(0), _spriteY(0), _frameIdx(0), _frameAccMs(0), _pathPosQ8(0) {}
 
   const char* getName() const override { return "sonic"; }
 
   void begin() override {
-    _sonicX = -SPR_W;
+    _spriteX = -SPR_W;
+    _spriteY = GROUND_Y - FEET_OFFSET;
     _frameIdx = 0;
     _frameAccMs = 0;
-    _groundScrollX = 0;
+    _pathPosQ8 = 0;
   }
 
   void end() override {}
@@ -193,12 +212,17 @@ class SonicMode : public DisplayMode {
     if (!u8g2 || deltaMs == 0)
       return;
 
-    _sonicX += (RUN_SPEED_PPS * static_cast<int>(deltaMs)) / 1000;
-    if (_sonicX > W) {
-      _sonicX = -SPR_W;
+    _pathPosQ8 += static_cast<int32_t>(RUN_SPEED_PPS) * static_cast<int32_t>(deltaMs) * 256 / 1000;
+    int lenQ8 = totalLen() * 256;
+    if (_pathPosQ8 >= lenQ8) {
+      _pathPosQ8 -= lenQ8;
     }
 
-    _groundScrollX = (_groundScrollX + (GROUND_SCROLL_PPS * static_cast<int>(deltaMs)) / 1000) % W;
+    int footX = 0;
+    int footY = 0;
+    computeFootPosition(_pathPosQ8 >> 8, footX, footY);
+    _spriteX = footX - FEET_X_OFFSET;
+    _spriteY = footY - FEET_OFFSET;
 
     _frameAccMs += deltaMs;
     while (_frameAccMs >= FRAME_MS) {
@@ -207,12 +231,11 @@ class SonicMode : public DisplayMode {
     }
 
     u8g2->clearBuffer();
-    drawGround(u8g2);
+    drawScene(u8g2);
 
-    if (_frameIdx < FRAME_COUNT && SONIC_FRAMES[_frameIdx] != nullptr && 
-        _sonicX + SPR_W > 0 && _sonicX < W) {
-      int spriteY = GROUND_Y - FEET_OFFSET;
-      u8g2->drawXBMP(_sonicX, spriteY, SPR_W, SPR_H, SONIC_FRAMES[_frameIdx]);
+    if (_frameIdx < FRAME_COUNT && SONIC_FRAMES[_frameIdx] != nullptr && _spriteX + SPR_W > 0 &&
+        _spriteX < W && _spriteY + SPR_H > 0 && _spriteY < H) {
+      u8g2->drawXBMP(_spriteX, _spriteY, SPR_W, SPR_H, SONIC_FRAMES[_frameIdx]);
     }
 
     yield();
