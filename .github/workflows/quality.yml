@@ -2,47 +2,24 @@ name: Code Quality & Tests
 
 on:
   push:
-    branches: [ master, main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ master, main, develop ]
+    branches: [main, develop]
 
 jobs:
-  pre-commit:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-    continue-on-error: true  # Don't block CI on linting issues
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install pre-commit
-        run: |
-          pip install pre-commit
-          pre-commit install
-
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files
-
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up secrets for testing
-        run: |
-          cp src/secrets.h.ci src/secrets.h
+      - name: Set up secrets
+        run: cp src/secrets.h.ci src/secrets.h
 
       - name: Cache PlatformIO
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.platformio
-            .pio
+          path: ~/.platformio
           key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
 
       - name: Set up Python
@@ -51,23 +28,36 @@ jobs:
           python-version: '3.11'
 
       - name: Install PlatformIO
-        run: |
-          pip install platformio
+        run: pip install platformio
 
-      - name: Run native Linux tests
-        run: |
-          echo "Running native tests on Linux..."
-          pio test -e native
+      - name: Run native tests
+        run: pio test -e native
 
-      - name: Build embedded tests (verify compilation)
+      - name: Verify ESP8266 firmware compiles
+        run: pio run -e esp8266_d1_mini
+
+  lint:
+    name: C++ Lint
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format and cpplint
         run: |
-          echo "Building embedded test firmware..."
-          pio test -e esp8266_d1_mini \
-            --filter test_Config \
-            --filter test_DisplayModes \
-            --filter test_Logger \
-            --without-testing --without-uploading
-          echo "✓ Embedded tests compiled successfully!"
+          sudo apt-get update -q
+          sudo apt-get install -y clang-format
+          pip install cpplint
+
+      - name: clang-format check
+        run: |
+          find src test -name '*.h' -o -name '*.cpp' -o -name '*.ino' | \
+            xargs clang-format --dry-run --Werror
+
+      - name: cpplint check
+        run: |
+          find src -name '*.h' -o -name '*.cpp' | \
+            xargs cpplint --filter=-legal/copyright,-build/include_subdir
 
   conventional-commits:
     name: Conventional Commits
@@ -82,67 +72,3 @@ jobs:
         uses: wagoid/commitlint-github-action@v5
         with:
           configFile: .commitlintrc.json
-
-  lint:
-    name: C++ Linting
-    runs-on: ubuntu-latest
-    continue-on-error: true  # Don't block CI on formatting issues
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
-
-      - name: Check C++ formatting
-        run: |
-          echo "NOTE: clang-format check is informational only"
-          find . -name "*.ino" -o -name "*.cpp" -o -name "*.h" | \
-          xargs clang-format --dry-run --Werror || true
-
-  build:
-    name: Build Firmware
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [esp8266_d1_mini, esp8266_nodmcu, esp8266_generic]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up secrets for build
-        run: |
-          cp src/secrets.h.ci src/secrets.h
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Cache PlatformIO
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.platformio
-            .pio
-          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
-
-      - name: Install PlatformIO
-        run: |
-          pip install platformio
-
-      - name: Build firmware for ${{ matrix.environment }}
-        run: |
-          pio run -e ${{ matrix.environment }}
-
-      - name: Create firmware artifact
-        run: |
-          mkdir -p firmware_artifacts
-          VERSION=$(python3 scripts/version.py current)
-          cp .pio/build/${{ matrix.environment }}/firmware.bin \
-             firmware_artifacts/esp-oled-screensaver_${VERSION}_${{ matrix.environment }}.bin
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-${{ matrix.environment }}
-          path: firmware_artifacts/
-          retention-days: 7

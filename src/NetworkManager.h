@@ -137,7 +137,6 @@ class NetworkManager {
 
     // Root page
     http.on("/", HTTP_GET, [this]() {
-      // If in AP mode, redirect to WiFi setup
       if (apMode) {
         http.sendHeader("Location", "/wifi");
         http.send(302, "text/plain", "");
@@ -146,148 +145,211 @@ class NetworkManager {
       http.setContentLength(CONTENT_LENGTH_UNKNOWN);
       http.send(200, F("text/html; charset=utf-8"), "");
 
-      http.sendContent(F("<h1>"));
+      http.sendContent(
+          F("<!doctype html><html lang='en'><head>"
+            "<meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>OLED Screensaver</title>"
+            "<script src='https://cdn.tailwindcss.com'></script>"
+            "<script>tailwind.config={theme:{extend:{colors:{accent:'#4ade80'}}}}</script>"
+            "</head>"
+            "<body class='bg-gray-950 text-gray-100 min-h-screen p-4 font-mono'>"
+            "<div class='max-w-lg mx-auto space-y-4'>"
+            "<div class='flex items-center justify-between'>"
+            "<h1 class='text-xl font-bold text-accent'>"));
       http.sendContent(Config::HOSTNAME);
-      http.sendContent(F("</h1><p><b>FW:</b> "));
+      http.sendContent(F("</h1><span class='text-xs text-gray-500'>"));
       http.sendContent(Config::FW_VERSION);
-      http.sendContent(F("</p><ul>"));
+      http.sendContent(F("</span></div>"));
 
-      http.sendContent(F("<li><b>WiFi:</b> "));
+      // Device card
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>Device</h2>"
+            "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
+      http.sendContent(F("<span class='text-gray-400'>WiFi</span><span class='text-right'>"));
       http.sendContent(wlStatusName(WiFi.status()));
-      http.sendContent(F("</li><li><b>IP:</b> "));
+      http.sendContent(F("</span><span class='text-gray-400'>IP</span><span class='text-right'>"));
       http.sendContent(WiFi.localIP().toString());
-      http.sendContent(F("</li><li><b>RSSI:</b> "));
+      http.sendContent(
+          F("</span><span class='text-gray-400'>RSSI</span><span class='text-right'>"));
       http.sendContent(String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0));
-      http.sendContent(F("</li><li><b>Heap:</b> "));
+      http.sendContent(
+          F(" dBm</span><span class='text-gray-400'>Heap</span><span class='text-right'>"));
       http.sendContent(String(ESP.getFreeHeap()));
-      http.sendContent(F("</li>"));
-
+      http.sendContent(F(" B</span>"));
       if (displayManager && displayManager->getCurrentMode()) {
-        http.sendContent(F("<li><b>Mode:</b> "));
+        http.sendContent(
+            F("<span class='text-gray-400'>Mode</span><span class='text-right text-accent'>"));
         http.sendContent(displayManager->getCurrentMode()->getName());
-        http.sendContent(F("</li>"));
+        http.sendContent(F("</span>"));
       }
+      http.sendContent(F("</div></div>"));
 
-      http.sendContent(F("<li><b>OLED:</b> "));
-      http.sendContent(Config::runtime.oledEnabled ? "on" : "off");
-      http.sendContent(F("</li><li><b>Driver:</b> "));
+      // OLED card
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>OLED</h2>"
+            "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
+      http.sendContent(F("<span class='text-gray-400'>Driver</span><span class='text-right'>"));
       http.sendContent(Config::runtime.getDriverName());
-      http.sendContent(F("</li><li><b>Rotation:</b> "));
+      http.sendContent(
+          F("</span><span class='text-gray-400'>Rotation</span><span class='text-right'>"));
       http.sendContent(Config::runtime.getRotationName());
-      http.sendContent(F("</li><li><b>X offset:</b> "));
+      http.sendContent(
+          F("</span><span class='text-gray-400'>X Offset</span><span class='text-right'>"));
       http.sendContent(String(Config::runtime.xOffset));
-      http.sendContent(F("</li><li><b>I2C:</b> SDA="));
+      http.sendContent(
+          F("</span><span class='text-gray-400'>I2C SDA</span><span class='text-right'>GPIO "));
       http.sendContent(String(Config::OLED_SDA));
-      http.sendContent(F(" SCL="));
+      http.sendContent(
+          F("</span><span class='text-gray-400'>I2C SCL</span><span class='text-right'>GPIO "));
       http.sendContent(String(Config::OLED_SCL));
-      http.sendContent(F(" addr=0x"));
-      http.sendContent(String(Config::OLED_ADDR, HEX));
-      http.sendContent(F("</li></ul>"));
-      http.sendContent(F("<h3>Diagnostics</h3><ul>"));
+      http.sendContent(F("</span></div></div>"));
 
+      // Diagnostics card
       bool credLoaded = CredentialsManager::hasValidCredentials();
-      http.sendContent(F("<li><b>WiFi Creds:</b> "));
-      http.sendContent(credLoaded ? "EEPROM" : "Compiled");
-      http.sendContent(F("</li>"));
-
       uint32_t freeHeap = ESP.getFreeHeap();
-      uint32_t totalHeap = 81920;  // ESP8266 has 80KB total heap
-      uint8_t heapAvail = (freeHeap * 100) / totalHeap;
-      http.sendContent(F("<li><b>RAM Free:</b> "));
-      http.sendContent(String(freeHeap));
-      http.sendContent(F("B ("));
-      http.sendContent(String(heapAvail));
-      http.sendContent(F("%)</li>"));
-
-      uint32_t maxBlock = ESP.getMaxFreeBlockSize();
-      if (maxBlock > 0) {
-        http.sendContent(F("<li><b>Max Block:</b> "));
-        http.sendContent(String(maxBlock));
-        http.sendContent(F("B</li>"));
-      }
-
-      uint32_t flashSize = ESP.getFlashChipSize();
       uint32_t sketchSize = ESP.getSketchSize();
-      uint8_t flashUsed = (sketchSize * 100) / flashSize;
-      http.sendContent(F("<li><b>Flash:</b> "));
-      http.sendContent(String(sketchSize));
-      http.sendContent(F("B ("));
+      uint8_t flashUsed = static_cast<uint8_t>((sketchSize * 100) / ESP.getFlashChipSize());
+      uint8_t heapPct = static_cast<uint8_t>((freeHeap * 100) / 81920);
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
+            "Diagnostics</h2>"
+            "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
+      http.sendContent(F("<span class='text-gray-400'>RAM Free</span><span class='text-right'>"));
+      http.sendContent(String(freeHeap));
+      http.sendContent(F(" B ("));
+      http.sendContent(String(heapPct));
+      http.sendContent(F("%)</span>"));
+      http.sendContent(F("<span class='text-gray-400'>Flash Used</span><span class='text-right'>"));
       http.sendContent(String(flashUsed));
-      http.sendContent(F("%)</li>"));
+      http.sendContent(F("%</span>"));
+      http.sendContent(F("<span class='text-gray-400'>WiFi Creds</span><span class='text-right'>"));
+      http.sendContent(credLoaded ? "EEPROM" : "Compiled");
+      http.sendContent(F("</span></div></div>"));
 
-      http.sendContent(F("<li><b>EEPROM:</b> "));
-      http.sendContent(String(CredentialsManager::EEPROM_SIZE));
-      if (credLoaded) {
-        http.sendContent(F("B (97B used)</li>"));
-      } else {
-        http.sendContent(F("B</li>"));
-      }
-
-      uint16_t vcc = ESP.getVcc();
-      if (vcc > 0) {
-        http.sendContent(F("<li><b>Power:</b> "));
-        http.sendContent(String(vcc));
-        http.sendContent(F("mV</li>"));
-      }
-
-      http.sendContent(F("</ul>"));
-
-      http.sendContent(F("<h3>Auto-Update</h3><ul>"));
+      // Auto-Update card
       bool autoUpdateEnabled = UpdateManager::isAutoUpdateEnabled();
-      http.sendContent(F("<li><b>Status:</b> "));
-      http.sendContent(autoUpdateEnabled ? "ENABLED" : "DISABLED");
-      http.sendContent(F("</li><li><b>Channel:</b> "));
+      bool updateAvail = UpdateChecker::isUpdateAvailable();
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
+            "Auto-Update</h2>"
+            "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
+      http.sendContent(F("<span class='text-gray-400'>Status</span><span class='text-right'>"));
+      http.sendContent(autoUpdateEnabled ? "<span class='text-accent'>Enabled</span>"
+                                         : "<span class='text-gray-500'>Disabled</span>");
+      http.sendContent(
+          F("</span><span class='text-gray-400'>Channel</span><span class='text-right'>"));
       http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable"
                                                                                           : "Beta");
-      http.sendContent(F("</li><li><b>Update Available:</b> "));
-      http.sendContent(UpdateChecker::isUpdateAvailable() ? "YES" : "No");
-      if (UpdateChecker::isUpdateAvailable()) {
-        http.sendContent(F(" (v"));
-        http.sendContent(UpdateChecker::getAvailableVersion());
-        http.sendContent(F(")"));
-      }
-      http.sendContent(F("</li></ul>"));
-      http.sendContent(F("<p>"));
-      http.sendContent(autoUpdateEnabled ? "<a href='/autoupdate?on=0'>Disable Auto-Update</a>"
-                                         : "<a href='/autoupdate?on=1'>Enable Auto-Update</a>");
-      http.sendContent(F("</p>"));
-
       http.sendContent(
-          F("<p><a href='/update'>OTA Update</a> | <a href='/check-update'>Check Now</a></p>"
-            "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
-            "<h3>Display Mode</h3>"
-            "<p>"
-            "<a href='/mode?m=screensaver'>Screensaver</a> | "
-            "<a href='/mode?m=status'>Status</a> | "
-            "<a href='/mode?m=boing'>Boing</a> | "
-            "<a href='/mode?m=weather'>Weather</a> | "
-            "<a href='/mode?m=clock'>Clock</a> | "
-            "<a href='/mode?m=breakout'>Breakout</a> | "
-            "<a href='/mode?m=pacman'>Pac-Man</a> | "
-            "<a href='/mode?m=starfield'>Starfield</a> | "
-            "<a href='/mode?m=life'>Life</a> | "
-            "<a href='/mode?m=matrix'>Matrix</a> | "
-            "<a href='/mode?m=plasma'>Plasma</a> | "
-            "<a href='/mode?m=tunnel'>Tunnel</a> | "
-            "<a href='/mode?m=pong'>Pong</a>"
-            "</p>"
-            "<h3>OLED Configuration</h3>"
-            "<p>Try these until border + text align perfectly:</p>"
-            "<ul>"
-            "<li><a href='/oledcfg?drv=sh1106&xoff=2'>SH1106 xoff=2 (common)</a></li>"
-            "<li><a href='/oledcfg?drv=sh1106&xoff=0'>SH1106 xoff=0</a></li>"
-            "<li><a href='/oledcfg?drv=ssd1306&xoff=0'>SSD1306 xoff=0 (common)</a></li>"
-            "<li><a href='/oledcfg?drv=ssd1306&xoff=2'>SSD1306 xoff=2</a></li>"
-            "</ul>"
-            "<p><a href='/oled?on=1'>OLED ON</a> | <a href='/oled?on=0'>OLED OFF</a></p>"
-            "<h3>Display Rotation</h3>"
-            "<p>"
-            "<a href='/rotation?rot=0'>0&#176;</a> | "
-            "<a href='/rotation?rot=1'>90&#176;</a> | "
-            "<a href='/rotation?rot=2'>180&#176;</a> | "
-            "<a href='/rotation?rot=3'>270&#176;</a>"
-            "</p>"
-            "<p><i>Telnet console on port 23</i></p>"));
+          F("</span><span class='text-gray-400'>Update</span><span class='text-right'>"));
+      if (updateAvail) {
+        http.sendContent(F("<span class='text-yellow-400'>v"));
+        http.sendContent(UpdateChecker::getAvailableVersion());
+        http.sendContent(F(" available</span>"));
+      } else {
+        http.sendContent(F("<span class='text-gray-500'>Up to date</span>"));
+      }
+      http.sendContent(F("</span></div>"));
+      http.sendContent(F("<div class='flex flex-wrap gap-2'>"));
+      http.sendContent(autoUpdateEnabled
+                           ? "<a href='/autoupdate?on=0' class='px-3 py-1 rounded-lg bg-gray-700 "
+                             "hover:bg-gray-600 text-sm'>Disable</a>"
+                           : "<a href='/autoupdate?on=1' class='px-3 py-1 rounded-lg bg-accent "
+                             "text-gray-950 hover:opacity-90 text-sm font-semibold'>Enable</a>");
+      http.sendContent(
+          F("<a href='/check-update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Check Now</a>"
+            "<a href='/update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>OTA Flash</a>"
+            "</div></div>"));
+
+      // Display modes card
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
+            "Display Mode</h2>"
+            "<div class='flex flex-wrap gap-2'>"
+            "<a href='/mode?m=screensaver' class='px-3 py-1 rounded-lg bg-accent text-gray-950 "
+            "text-sm font-semibold'>Screensaver</a>"
+            "<a href='/mode?m=clock' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Clock</a>"
+            "<a href='/mode?m=boing' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Boing</a>"
+            "<a href='/mode?m=weather' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Weather</a>"
+            "<a href='/mode?m=breakout' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Breakout</a>"
+            "<a href='/mode?m=pacman' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Pac-Man</a>"
+            "<a href='/mode?m=starfield' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Starfield</a>"
+            "<a href='/mode?m=life' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Life</a>"
+            "<a href='/mode?m=matrix' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Matrix</a>"
+            "<a href='/mode?m=plasma' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Plasma</a>"
+            "<a href='/mode?m=tunnel' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Tunnel</a>"
+            "<a href='/mode?m=pong' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Pong</a>"
+            "<a href='/mode?m=status' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Status</a>"
+            "</div></div>"));
+
+      // OLED config card
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
+            "OLED Config</h2>"
+            "<div class='flex flex-wrap gap-2'>"
+            "<a href='/oledcfg?drv=ssd1306&xoff=0' class='px-3 py-1 rounded-lg bg-gray-700 "
+            "hover:bg-gray-600 text-sm'>SSD1306 x0</a>"
+            "<a href='/oledcfg?drv=ssd1306&xoff=2' class='px-3 py-1 rounded-lg bg-gray-700 "
+            "hover:bg-gray-600 text-sm'>SSD1306 x2</a>"
+            "<a href='/oledcfg?drv=sh1106&xoff=0' class='px-3 py-1 rounded-lg bg-gray-700 "
+            "hover:bg-gray-600 text-sm'>SH1106 x0</a>"
+            "<a href='/oledcfg?drv=sh1106&xoff=2' class='px-3 py-1 rounded-lg bg-gray-700 "
+            "hover:bg-gray-600 text-sm'>SH1106 x2</a>"
+            "</div>"
+            "<div class='flex flex-wrap gap-2'>"
+            "<span class='text-xs text-gray-400 w-full'>Rotation</span>"
+            "<a href='/rotation?rot=0' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>0&#176;</a>"
+            "<a href='/rotation?rot=1' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>90&#176;</a>"
+            "<a href='/rotation?rot=2' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>180&#176;</a>"
+            "<a href='/rotation?rot=3' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>270&#176;</a>"
+            "</div>"
+            "<div class='flex gap-2'>"
+            "<a href='/oled?on=1' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>OLED On</a>"
+            "<a href='/oled?on=0' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>OLED Off</a>"
+            "</div></div>"));
+
+      // System card
+      http.sendContent(
+          F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
+            "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>System</h2>"
+            "<div class='flex flex-wrap gap-2'>"
+            "<a href='/wifi' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>WiFi Setup</a>"
+            "<a href='/clear-eeprom' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Clear WiFi</a>"
+            "<a href='/reboot' class='px-3 py-1 rounded-lg bg-red-900 hover:bg-red-800 "
+            "text-sm'>Reboot</a>"
+            "</div>"
+            "<p class='text-xs text-gray-500'>Telnet console: port 23</p>"
+            "</div>"
+            "</div></body></html>"));
     });
 
     http.on("/health", HTTP_GET, [this]() {
@@ -390,19 +452,34 @@ class NetworkManager {
     });
 
     http.on("/wifi", HTTP_GET, [this]() {
-      String html;
-      html.reserve(900);
-      html +=
-          "<!doctype html><html><head><meta name='viewport' "
-          "content='width=device-width,initial-scale=1'>";
-      html += "<title>WiFi Setup</title></head><body>";
-      html += "<h2>WiFi Setup</h2>";
-      html += "<form method='POST' action='/save-wifi'>";
-      html += "SSID:<br><input name='ssid' maxlength='31' required><br><br>";
-      html += "Password:<br><input name='pass' type='password' maxlength='63'><br><br>";
-      html += "<button type='submit'>Save & Reboot</button></form>";
-      html += "</body></html>";
-      http.send(200, "text/html", html);
+      http.send(200, F("text/html; charset=utf-8"),
+                F("<!doctype html><html lang='en'><head>"
+                  "<meta charset='utf-8'>"
+                  "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                  "<title>WiFi Setup</title>"
+                  "<script src='https://cdn.tailwindcss.com'></script>"
+                  "</head>"
+                  "<body class='bg-gray-950 text-gray-100 min-h-screen p-4 font-mono'>"
+                  "<div class='max-w-lg mx-auto space-y-4'>"
+                  "<h1 class='text-xl font-bold text-green-400'>WiFi Setup</h1>"
+                  "<div class='bg-gray-900 rounded-xl p-4 space-y-4'>"
+                  "<form method='POST' action='/save-wifi' class='space-y-4'>"
+                  "<div class='space-y-1'>"
+                  "<label class='text-xs text-gray-400 uppercase tracking-wider'>SSID</label>"
+                  "<input name='ssid' maxlength='31' required autocomplete='off' "
+                  "class='w-full bg-gray-800 rounded-lg px-3 py-2 text-sm outline-none "
+                  "focus:ring-2 focus:ring-green-400'></div>"
+                  "<div class='space-y-1'>"
+                  "<label class='text-xs text-gray-400 uppercase tracking-wider'>Password</label>"
+                  "<input name='pass' type='password' maxlength='63' autocomplete='off' "
+                  "class='w-full bg-gray-800 rounded-lg px-3 py-2 text-sm outline-none "
+                  "focus:ring-2 focus:ring-green-400'></div>"
+                  "<button type='submit' class='w-full py-2 rounded-lg bg-green-400 "
+                  "text-gray-950 font-semibold hover:opacity-90'>Save &amp; Reboot</button>"
+                  "</form></div>"
+                  "<a href='/' class='text-sm text-gray-500 hover:text-gray-300'>"
+                  "&#8592; Back</a>"
+                  "</div></body></html>"));
     });
 
     http.on("/save-wifi", HTTP_POST, [this]() {
@@ -424,7 +501,15 @@ class NetworkManager {
         return;
       }
 
-      http.send(200, "text/html", "<html><body><h3>Saved. Rebooting...</h3></body></html>");
+      http.send(200, F("text/html; charset=utf-8"),
+                F("<!doctype html><html><head><meta charset='utf-8'>"
+                  "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                  "<script src='https://cdn.tailwindcss.com'></script></head>"
+                  "<body class='bg-gray-950 text-gray-100 min-h-screen p-4 font-mono'>"
+                  "<div class='max-w-lg mx-auto pt-12 text-center space-y-2'>"
+                  "<p class='text-green-400 text-lg font-semibold'>Saved. Rebooting...</p>"
+                  "<p class='text-gray-500 text-sm'>Device will reconnect shortly.</p>"
+                  "</div></body></html>"));
       delay(500);
       ESP.restart();
     });
@@ -456,6 +541,7 @@ class NetworkManager {
     });
 
     http.on("/check-update", HTTP_GET, [this]() {
+      UpdateChecker::forceCheck();
       String json = "{";
       json += "\"auto_update_enabled\":" +
               String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
