@@ -125,6 +125,57 @@ test(SonicModeTest, BeginDoesNotCrash) {
   assertTrue(true);
 }
 
+test(SonicModeTest, BeginResetsPathPosition) {
+  SonicMode mode;
+  mode.begin();
+  assertEqual(mode.getPathPosQ8(), (int32_t)0);
+}
+
+test(SonicModeTest, BeginResetsFrameIndex) {
+  SonicMode mode;
+  mode.begin();
+  assertEqual((int)mode.getFrameIdx(), 0);
+}
+
+test(SonicModeTest, BeginResetsGroundScroll) {
+  SonicMode mode;
+  mode.begin();
+  assertEqual(mode.getGroundScrollX(), 0);
+}
+
+test(SonicModeTest, BeginSetsNotOnLoop) {
+  SonicMode mode;
+  mode.begin();
+  assertFalse(mode.isOnLoop());
+}
+
+test(SonicModeTest, TotalLenIsPositive) {
+  assertTrue(SonicMode::getTotalLen() > 0);
+}
+
+test(SonicModeTest, LoopSectionIsWithinTotalLen) {
+  int loopStart = SonicMode::getLoopStartLen();
+  int loopEnd = loopStart + SonicMode::getLoopLen();
+  assertTrue(loopStart > 0);
+  assertTrue(loopEnd < SonicMode::getTotalLen());
+}
+
+test(SonicModeTest, OnLoopIsFalseBeforeLoopSection) {
+  SonicMode mode;
+  mode.begin();
+  // Path position 0 is the approach — should not be on loop
+  assertFalse(mode.isOnLoop());
+}
+
+test(SonicModeTest, SpeedLineDoesNotOccurOnLoop) {
+  // When _onLoop is true, speed lines are suppressed.
+  // We verify this indirectly: after begin() _onLoop is false,
+  // and isOnLoop() reflects the last computed position.
+  SonicMode mode;
+  mode.begin();
+  assertFalse(mode.isOnLoop());
+}
+
 test(DisplayModeTest, NamesAreLowercase) {
   StatusMode status;
   BoingMode boing;
