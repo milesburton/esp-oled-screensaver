@@ -212,8 +212,7 @@ class NetworkManager {
       uint32_t freeHeap = ESP.getFreeHeap();
       uint32_t maxBlock = ESP.getMaxFreeBlockSize();
       uint32_t sketchSize = ESP.getSketchSize();
-      uint32_t otaSlot = ESP.getFreeSketchSpace();
-      uint8_t otaPct = static_cast<uint8_t>((sketchSize * 100) / otaSlot);
+      uint32_t otaFree = ESP.getFreeSketchSpace();
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
@@ -225,13 +224,12 @@ class NetworkManager {
       http.sendContent(F("<span class='text-gray-400'>Max Block</span><span class='text-right'>"));
       http.sendContent(String(maxBlock));
       http.sendContent(F(" B</span>"));
-      http.sendContent(F("<span class='text-gray-400'>OTA Slot</span><span class='text-right'>"));
+      http.sendContent(F("<span class='text-gray-400'>Sketch</span><span class='text-right'>"));
       http.sendContent(String(sketchSize / 1024));
-      http.sendContent(F(" / "));
-      http.sendContent(String(otaSlot / 1024));
-      http.sendContent(F(" KB ("));
-      http.sendContent(String(otaPct));
-      http.sendContent(F("%)</span>"));
+      http.sendContent(F(" KB</span>"));
+      http.sendContent(F("<span class='text-gray-400'>OTA Free</span><span class='text-right'>"));
+      http.sendContent(String(otaFree / 1024));
+      http.sendContent(F(" KB</span>"));
       http.sendContent(F("<span class='text-gray-400'>WiFi Creds</span><span class='text-right'>"));
       http.sendContent(credLoaded ? "EEPROM" : "Compiled");
       http.sendContent(F("</span></div></div>"));
