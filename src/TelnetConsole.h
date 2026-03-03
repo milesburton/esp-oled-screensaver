@@ -19,6 +19,8 @@
 #include "ScreensaverMode.h"
 #include "StarfieldMode.h"
 #include "TunnelMode.h"
+#include "UpdateChecker.h"
+#include "UpdateManager.h"
 
 class TelnetConsole {
  private:
@@ -50,9 +52,13 @@ class TelnetConsole {
     client.println("  xoff <int>                - Set X offset (-20..20)");
     client.println("  rot 0|1|2|3               - Set rotation (0/90/180/270 deg)");
     client.println(
-        "  mode screensaver|status|boing|weather|clock|breakout|pacman|starfield|life|matrix|plasma|tunnel|pong"
+        "  mode "
+        "screensaver|status|boing|weather|clock|breakout|pacman|starfield|life|matrix|plasma|"
+        "tunnel|pong"
         " - Switch display mode");
     client.println("  oled on|off               - Enable/disable OLED");
+    client.println("  update status             - Show auto-update state");
+    client.println("  update check              - Force check for new firmware");
     client.println("  reboot                    - Restart device");
   }
 
@@ -223,6 +229,28 @@ class TelnetConsole {
         displayManager->clear();
       }
       client.println("ok");
+
+    } else if (cmd == "update status") {
+      client.printf(
+          "auto_update=%s channel=%s fw=%s\n",
+          UpdateManager::isAutoUpdateEnabled() ? "enabled" : "disabled",
+          UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "stable" : "beta",
+          Config::FW_VERSION);
+      if (UpdateChecker::isUpdateAvailable()) {
+        client.printf("update_available=YES version=%s\n", UpdateChecker::getAvailableVersion());
+      } else {
+        client.println("update_available=NO");
+      }
+
+    } else if (cmd == "update check") {
+      client.println("Checking for updates...");
+      client.flush();
+      UpdateChecker::forceCheck();
+      if (UpdateChecker::isUpdateAvailable()) {
+        client.printf("UPDATE AVAILABLE: v%s\n", UpdateChecker::getAvailableVersion());
+      } else {
+        client.println("No update available (or check failed - see logger output)");
+      }
 
     } else if (cmd == "reboot") {
       client.println("Rebooting...");

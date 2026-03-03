@@ -4,6 +4,8 @@
 
 #include <ESP8266HTTPClient.h>
 
+#include <WiFiClientSecure.h>
+
 #include "Config.h"
 #include "Logger.h"
 #include "UpdateManager.h"
@@ -100,7 +102,8 @@ inline void fetchAndCompare() {
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
-  WiFiClient wifiClient;
+  WiFiClientSecure wifiClient;
+  wifiClient.setInsecure();
 
   if (!http.begin(wifiClient, GITHUB_API_URL)) {
     Logger::println("UpdateChecker: ERROR - failed to begin HTTP request");
