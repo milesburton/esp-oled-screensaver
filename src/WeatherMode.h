@@ -113,7 +113,7 @@ class WeatherMode : public DisplayMode {
       // Large temperature centred
       char tempStr[10];
       snprintf(tempStr, sizeof(tempStr), "%.1fC", _tempC);
-      u8g2->setFont(u8g2_font_logisoso24_tf);
+      u8g2->setFont(u8g2_font_logisoso28_tf);
       int tw = u8g2->getStrWidth(tempStr);
       DisplayManager::drawStr(u8g2, (Config::DISPLAY_WIDTH - tw) / 2, 40, tempStr);
 

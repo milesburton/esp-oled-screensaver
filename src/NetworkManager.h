@@ -210,102 +210,109 @@ class NetworkManager {
       // Diagnostics card
       bool credLoaded = CredentialsManager::hasValidCredentials();
       uint32_t freeHeap = ESP.getFreeHeap();
-      uint32_t maxBlock = ESP.getMaxFreeBlockSize();
       uint32_t sketchSize = ESP.getSketchSize();
-      uint32_t otaFree = ESP.getFreeSketchSpace();
+      uint8_t flashUsed = static_cast<uint8_t>((sketchSize * 100) / ESP.getFlashChipSize());
+      uint8_t heapPct = static_cast<uint8_t>((freeHeap * 100) / 81920);
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-2'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
             "Diagnostics</h2>"
             "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
-      http.sendContent(F("<span class='text-gray-400'>Heap Free</span><span class='text-right'>"));
+      http.sendContent(F("<span class='text-gray-400'>RAM Free</span><span class='text-right'>"));
       http.sendContent(String(freeHeap));
-      http.sendContent(F(" B</span>"));
-      http.sendContent(F("<span class='text-gray-400'>Max Block</span><span class='text-right'>"));
-      http.sendContent(String(maxBlock));
-      http.sendContent(F(" B</span>"));
-      http.sendContent(F("<span class='text-gray-400'>Sketch</span><span class='text-right'>"));
-      http.sendContent(String(sketchSize / 1024));
-      http.sendContent(F(" KB</span>"));
-      http.sendContent(F("<span class='text-gray-400'>OTA Free</span><span class='text-right'>"));
-      http.sendContent(String(otaFree / 1024));
-      http.sendContent(F(" KB</span>"));
+      http.sendContent(F(" B ("));
+      http.sendContent(String(heapPct));
+      http.sendContent(F("%)</span>"));
+      http.sendContent(F("<span class='text-gray-400'>Flash Used</span><span class='text-right'>"));
+      http.sendContent(String(flashUsed));
+      http.sendContent(F("%</span>"));
       http.sendContent(F("<span class='text-gray-400'>WiFi Creds</span><span class='text-right'>"));
       http.sendContent(credLoaded ? "EEPROM" : "Compiled");
       http.sendContent(F("</span></div></div>"));
 
       // Auto-Update card
-      bool autoUpdateEnabled = UpdateManager::isAutoUpdateEnabled();
-      bool updateAvail = UpdateChecker::isUpdateAvailable();
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
-            "Auto-Update</h2>"
-            "<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
-      http.sendContent(F("<span class='text-gray-400'>Status</span><span class='text-right'>"));
-      http.sendContent(autoUpdateEnabled ? "<span class='text-accent'>Enabled</span>"
-                                         : "<span class='text-gray-500'>Disabled</span>");
-      http.sendContent(
-          F("</span><span class='text-gray-400'>Channel</span><span class='text-right'>"));
-      http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable"
-                                                                                          : "Beta");
-      http.sendContent(
-          F("</span><span class='text-gray-400'>Update</span><span class='text-right'>"));
-      if (updateAvail) {
-        http.sendContent(F("<span class='text-yellow-400'>v"));
-        http.sendContent(UpdateChecker::getAvailableVersion());
-        http.sendContent(F(" available</span>"));
-      } else {
-        http.sendContent(F("<span class='text-gray-500'>Up to date</span>"));
+            "Auto-Update</h2>"));
+#ifdef OTA_SUPPORTED
+      {
+        bool autoUpdateEnabled = UpdateManager::isAutoUpdateEnabled();
+        bool updateAvail = UpdateChecker::isUpdateAvailable();
+        http.sendContent(F("<div class='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>"));
+        http.sendContent(F("<span class='text-gray-400'>Status</span><span class='text-right'>"));
+        http.sendContent(autoUpdateEnabled ? "<span class='text-accent'>Enabled</span>"
+                                           : "<span class='text-gray-500'>Disabled</span>");
+        http.sendContent(
+            F("</span><span class='text-gray-400'>Channel</span><span class='text-right'>"));
+        http.sendContent(
+            UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable" : "Beta");
+        http.sendContent(
+            F("</span><span class='text-gray-400'>Update</span><span class='text-right'>"));
+        if (updateAvail) {
+          http.sendContent(F("<span class='text-yellow-400'>v"));
+          http.sendContent(UpdateChecker::getAvailableVersion());
+          http.sendContent(F(" available</span>"));
+        } else {
+          http.sendContent(F("<span class='text-gray-500'>Up to date</span>"));
+        }
+        http.sendContent(F("</span></div>"));
+        http.sendContent(F("<div class='flex flex-wrap gap-2'>"));
+        http.sendContent(autoUpdateEnabled
+                             ? "<a href='/autoupdate?on=0' class='px-3 py-1 rounded-lg bg-gray-700 "
+                               "hover:bg-gray-600 text-sm'>Disable</a>"
+                             : "<a href='/autoupdate?on=1' class='px-3 py-1 rounded-lg bg-accent "
+                               "text-gray-950 hover:opacity-90 text-sm font-semibold'>Enable</a>");
+        http.sendContent(
+            F("<a href='/check-update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+              "text-sm'>Check Now</a>"
+              "<a href='/update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+              "text-sm'>OTA Flash</a>"
+              "</div>"));
       }
-      http.sendContent(F("</span></div>"));
-      http.sendContent(F("<div class='flex flex-wrap gap-2'>"));
-      http.sendContent(autoUpdateEnabled
-                           ? "<a href='/autoupdate?on=0' class='px-3 py-1 rounded-lg bg-gray-700 "
-                             "hover:bg-gray-600 text-sm'>Disable</a>"
-                           : "<a href='/autoupdate?on=1' class='px-3 py-1 rounded-lg bg-accent "
-                             "text-gray-950 hover:opacity-90 text-sm font-semibold'>Enable</a>");
+#else
       http.sendContent(
-          F("<a href='/check-update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
-            "text-sm'>Check Now</a>"
+          F("<p class='text-sm text-gray-500'>Not supported on 1MB flash.</p>"
+            "<div class='flex flex-wrap gap-2'>"
             "<a href='/update' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
             "text-sm'>OTA Flash</a>"
-            "</div></div>"));
+            "</div>"));
+#endif
+      http.sendContent(F("</div>"));
 
       // Display modes card
-      const char* currentModeName = (displayManager && displayManager->getCurrentMode())
-                                        ? displayManager->getCurrentMode()->getName()
-                                        : "";
-      auto modeBtn = [&](const char* name, const char* label) {
-        http.sendContent(F("<a href='/mode?m="));
-        http.sendContent(name);
-        bool active = strcmp(name, currentModeName) == 0;
-        http.sendContent(active ? F("' class='px-3 py-1 rounded-lg bg-accent text-gray-950 "
-                                    "text-sm font-semibold'>")
-                                : F("' class='px-3 py-1 rounded-lg bg-gray-700 "
-                                    "hover:bg-gray-600 text-sm'>"));
-        http.sendContent(label);
-        http.sendContent(F("</a>"));
-      };
       http.sendContent(
           F("<div class='bg-gray-900 rounded-xl p-4 space-y-3'>"
             "<h2 class='text-xs font-semibold text-gray-400 uppercase tracking-wider'>"
             "Display Mode</h2>"
-            "<div class='flex flex-wrap gap-2'>"));
-      modeBtn("screensaver", "Screensaver");
-      modeBtn("clock", "Clock");
-      modeBtn("boing", "Boing");
-      modeBtn("weather", "Weather");
-      modeBtn("breakout", "Breakout");
-      modeBtn("pacman", "Pac-Man");
-      modeBtn("starfield", "Starfield");
-      modeBtn("life", "Life");
-      modeBtn("matrix", "Matrix");
-      modeBtn("plasma", "Plasma");
-      modeBtn("tunnel", "Tunnel");
-      modeBtn("pong", "Pong");
-      modeBtn("status", "Status");
-      http.sendContent(F("</div></div>"));
+            "<div class='flex flex-wrap gap-2'>"
+            "<a href='/mode?m=screensaver' class='px-3 py-1 rounded-lg bg-accent text-gray-950 "
+            "text-sm font-semibold'>Screensaver</a>"
+            "<a href='/mode?m=clock' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Clock</a>"
+            "<a href='/mode?m=boing' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Boing</a>"
+            "<a href='/mode?m=weather' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Weather</a>"
+            "<a href='/mode?m=breakout' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Breakout</a>"
+            "<a href='/mode?m=pacman' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Pac-Man</a>"
+            "<a href='/mode?m=starfield' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Starfield</a>"
+            "<a href='/mode?m=life' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Life</a>"
+            "<a href='/mode?m=matrix' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Matrix</a>"
+            "<a href='/mode?m=plasma' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Plasma</a>"
+            "<a href='/mode?m=tunnel' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Tunnel</a>"
+            "<a href='/mode?m=pong' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Pong</a>"
+            "<a href='/mode?m=status' class='px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 "
+            "text-sm'>Status</a>"
+            "</div></div>"));
 
       // OLED config card
       http.sendContent(
@@ -532,6 +539,7 @@ class NetworkManager {
       ESP.restart();
     });
 
+#ifdef OTA_SUPPORTED
     http.on("/autoupdate", HTTP_GET, [this]() {
       if (http.hasArg("on")) {
         bool enabled = (http.arg("on") == "1");
@@ -564,13 +572,11 @@ class NetworkManager {
     });
 
     http.on("/force-check", HTTP_GET, [this]() {
-      // Force a manual update check regardless of auto-update setting or interval
       UpdateChecker::forceCheck();
       http.send(200, "application/json", "{\"status\":\"check triggered\"}");
     });
 
     http.on("/update-status", HTTP_GET, [this]() {
-      // Report current auto-update status in JSON format
       String json = "{";
       json += "\"auto_update_enabled\":" +
               String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
@@ -579,7 +585,6 @@ class NetworkManager {
           "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false") +
           ",";
 
-      // Map updater state to string
       const char* stateStr = "UNKNOWN";
       switch (AutoUpdater::getState()) {
         case AutoUpdater::UpdateState::IDLE:
@@ -624,6 +629,7 @@ class NetworkManager {
       json += "}";
       http.send(200, "application/json", json);
     });
+#endif  // OTA_SUPPORTED
 
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
   }
@@ -705,11 +711,10 @@ class NetworkManager {
     http.handleClient();
     ElegantOTA.loop();
 
-    // Check for available updates periodically (every 6 hours if enabled)
+#ifdef OTA_SUPPORTED
     UpdateChecker::checkForUpdates();
-
-    // Attempt automatic update if available and enabled
     AutoUpdater::attemptAutoUpdate();
+#endif
 
     // Process DNS requests in AP mode for captive portal (wildcard redirect)
     if (apMode) {

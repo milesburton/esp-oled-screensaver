@@ -57,8 +57,10 @@ class TelnetConsole {
         "tunnel|pong"
         " - Switch display mode");
     client.println("  oled on|off               - Enable/disable OLED");
+#ifdef OTA_SUPPORTED
     client.println("  update status             - Show auto-update state");
     client.println("  update check              - Force check for new firmware");
+#endif
     client.println("  reboot                    - Restart device");
   }
 
@@ -230,6 +232,7 @@ class TelnetConsole {
       }
       client.println("ok");
 
+#ifdef OTA_SUPPORTED
     } else if (cmd == "update status") {
       client.printf(
           "auto_update=%s channel=%s fw=%s\n",
@@ -251,6 +254,7 @@ class TelnetConsole {
       } else {
         client.println("No update available (or check failed - see logger output)");
       }
+#endif
 
     } else if (cmd == "reboot") {
       client.println("Rebooting...");

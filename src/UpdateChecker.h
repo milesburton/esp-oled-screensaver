@@ -2,9 +2,11 @@
 
 #include <Arduino.h>
 
+#ifdef OTA_SUPPORTED
 #include <ESP8266HTTPClient.h>
 
 #include <WiFiClientSecure.h>
+#endif
 
 #include "Config.h"
 #include "Logger.h"
@@ -13,6 +15,7 @@
 #include <cstdio>
 
 namespace UpdateChecker {
+
 inline const char* skipVersionPrefix(const char* s) {
   while (*s && !isdigit(static_cast<unsigned char>(*s)))
     ++s;
@@ -32,6 +35,8 @@ inline bool isNewerVersion(const char* remoteVersionStr, const char* localVersio
     return rMinor > lMinor;
   return rPatch > lPatch;
 }
+
+#ifdef OTA_SUPPORTED
 
 struct ManifestEntry {
   char version[16];
@@ -196,5 +201,24 @@ inline void printStatus() {
   Logger::printf("UpdateChecker: available=%s version=%s", updateAvailable ? "YES" : "NO",
                  availableVersionStr[0] ? availableVersionStr : "(none)");
 }
+
+#else
+
+// Stubs for 1MB flash builds — auto-update not supported
+inline void reset() {}
+inline void checkForUpdates() {}
+inline void forceCheck() {}
+inline bool isUpdateAvailable() {
+  return false;
+}
+inline const char* getAvailableVersion() {
+  return "";
+}
+inline const char* getDownloadUrl() {
+  return "";
+}
+inline void printStatus() {}
+
+#endif  // OTA_SUPPORTED
 
 }  // namespace UpdateChecker

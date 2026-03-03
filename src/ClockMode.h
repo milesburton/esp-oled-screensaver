@@ -25,7 +25,7 @@ class ClockMode : public DisplayMode {
     u8g2->clearBuffer();
 
     // Large HH:MM centred — use fixed colon width to avoid jitter
-    u8g2->setFont(u8g2_font_logisoso24_tf);
+    u8g2->setFont(u8g2_font_logisoso28_tf);
     char hourBuf[3], minBuf[3];
     snprintf(hourBuf, sizeof(hourBuf), "%02d", ti->tm_hour);
     snprintf(minBuf, sizeof(minBuf), "%02d", ti->tm_min);

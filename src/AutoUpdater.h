@@ -2,10 +2,12 @@
 
 #include <Arduino.h>
 
+#ifdef OTA_SUPPORTED
 #include <ESP8266HTTPClient.h>
 
 #include <Updater.h>
 #include <WiFiClientSecure.h>
+#endif
 
 #include "Config.h"
 #include "Logger.h"
@@ -13,18 +15,25 @@
 #include "UpdateManager.h"
 
 namespace AutoUpdater {
-// Update states
+
+#ifndef OTA_SUPPORTED
+
+inline void attemptAutoUpdate() {}
+inline void printStatus() {}
+
+#else
+
 enum class UpdateState {
-  IDLE,            // Waiting or no update available
-  DOWNLOADING,     // Fetching binary from GitHub
-  VALIDATING,      // Verifying SHA256 (if available)
-  FLASHING,        // Writing to flash partition
-  VERIFYING,       // Post-flash verification
-  SUCCESS,         // Completed successfully
-  ERROR_DOWNLOAD,  // Download failed
-  ERROR_UNPACK,    // Binary unpacking failed
-  ERROR_FLASH,     // Flash write failed
-  ERROR_ABORT,     // User aborted
+  IDLE,
+  DOWNLOADING,
+  VALIDATING,
+  FLASHING,
+  VERIFYING,
+  SUCCESS,
+  ERROR_DOWNLOAD,
+  ERROR_UNPACK,
+  ERROR_FLASH,
+  ERROR_ABORT,
 };
 
 static UpdateState currentState = UpdateState::IDLE;
@@ -32,11 +41,10 @@ static uint32_t lastUpdateAttemptMs = 0;
 static uint32_t updateStartMs = 0;
 static uint32_t bytesDownloaded = 0;
 static uint32_t totalBytesExpected = 0;
-static uint8_t updateProgress = 0;  // 0-100
+static uint8_t updateProgress = 0;
 
-// Attempt update only once per hour to avoid hammering network if it fails
 static constexpr uint32_t AUTO_UPDATE_RETRY_INTERVAL_MS = 60 * 60 * 1000;
-static constexpr uint32_t HTTP_TIMEOUT_MS = 30000;  // 30 sec timeout for binary download
+static constexpr uint32_t HTTP_TIMEOUT_MS = 30000;
 
 inline const char* stateToString(UpdateState state) {
   switch (state) {
@@ -81,20 +89,10 @@ inline void reset() {
   lastUpdateAttemptMs = millis();
 }
 
-// Forward declaration
 inline void performUpdate();
 
-// Attempt to perform OTA update if update is available
-// Called periodically from NetworkManager::update()
 inline void attemptAutoUpdate() {
   uint32_t now = millis();
-
-  // Only try if:
-  // 1. Auto-update enabled
-  // 2. Update is available from checker
-  // 3. WiFi connected
-  // 4. Not in the middle of an update
-  // 5. Haven't retried too recently
 
   if (!UpdateManager::isAutoUpdateEnabled()) {
     return;
@@ -111,7 +109,7 @@ inline void attemptAutoUpdate() {
 
   if (currentState != UpdateState::IDLE && currentState != UpdateState::SUCCESS &&
       currentState != UpdateState::ERROR_DOWNLOAD && currentState != UpdateState::ERROR_FLASH) {
-    return;  // Still busy or in error state
+    return;
   }
 
   if (currentState == UpdateState::SUCCESS) {
@@ -120,13 +118,11 @@ inline void attemptAutoUpdate() {
     ESP.restart();
   }
 
-  // Rate-limit: don't retry failed updates too frequently
   if ((currentState == UpdateState::ERROR_DOWNLOAD || currentState == UpdateState::ERROR_FLASH) &&
       (now - lastUpdateAttemptMs < AUTO_UPDATE_RETRY_INTERVAL_MS)) {
     return;
   }
 
-  // Start new download attempt
   if (currentState == UpdateState::IDLE) {
     Logger::printf("AutoUpdater: starting auto-update from v%s to v%s", Config::FW_VERSION,
                    UpdateChecker::getAvailableVersion());
@@ -137,7 +133,6 @@ inline void attemptAutoUpdate() {
   }
 }
 
-// Actual download and flash logic
 inline void performUpdate() {
   const char* downloadUrl = UpdateChecker::getDownloadUrl();
   if (!downloadUrl || strlen(downloadUrl) == 0) {
@@ -177,7 +172,6 @@ inline void performUpdate() {
 
   Logger::printf("AutoUpdater: downloading %u bytes", totalBytesExpected);
 
-  // Check available free update partition space
   if (totalBytesExpected > (ESP.getFreeSketchSpace() - 0x1000)) {
     Logger::println("AutoUpdater: ERROR - insufficient space for update");
     http.end();
@@ -185,7 +179,6 @@ inline void performUpdate() {
     return;
   }
 
-  // Begin OTA update
   if (!Update.begin(totalBytesExpected)) {
     Logger::printf("AutoUpdater: Update.begin() failed, error: %u", Update.getError());
     http.end();
@@ -193,7 +186,6 @@ inline void performUpdate() {
     return;
   }
 
-  // Stream binary from HTTP into flash
   bytesDownloaded = 0;
   WiFiClient* stream = http.getStreamPtr();
   uint8_t buffer[512];
@@ -221,7 +213,6 @@ inline void performUpdate() {
       yield();
     }
 
-    // Timeout protection
     if (millis() - updateStartMs > (HTTP_TIMEOUT_MS + 10000)) {
       Logger::println("AutoUpdater: ERROR - download timeout");
       http.end();
@@ -233,7 +224,6 @@ inline void performUpdate() {
 
   http.end();
 
-  // Verify download size
   if (bytesDownloaded != totalBytesExpected) {
     Logger::printf("AutoUpdater: ERROR - size mismatch (got %u, expected %u)", bytesDownloaded,
                    totalBytesExpected);
@@ -242,7 +232,6 @@ inline void performUpdate() {
     return;
   }
 
-  // Finalize flash
   currentState = UpdateState::VERIFYING;
   if (!Update.end(true)) {
     Logger::printf("AutoUpdater: Update.end() failed, error: %u", Update.getError());
@@ -263,5 +252,7 @@ inline void printStatus() {
       stateToString(currentState), updateProgress, bytesDownloaded, totalBytesExpected,
       (millis() - updateStartMs));
 }
+
+#endif  // OTA_SUPPORTED
 
 }  // namespace AutoUpdater

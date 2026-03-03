@@ -7,11 +7,10 @@ class LifeMode : public DisplayMode {
  private:
   static constexpr int W = Config::DISPLAY_WIDTH;
   static constexpr int H = Config::DISPLAY_HEIGHT;
-  static constexpr int WORDS = W / 32;  // 128 / 32 = 4 uint32_t per row
 
-  // Bit-packed grids: 1 bit per cell, 4 words × 64 rows = 256 bytes each
-  uint32_t grid[H][WORDS];
-  uint32_t next[H][WORDS];
+  // Double-buffer — one cell per bit would be tight; use bytes for simplicity
+  uint8_t grid[H][W];
+  uint8_t next[H][W];
 
   uint32_t seed;
   uint16_t lastPopulation;
@@ -25,25 +24,22 @@ class LifeMode : public DisplayMode {
     return seed;
   }
 
-  bool getCell(const uint32_t g[][WORDS], int x, int y) const {
-    return (g[y][x >> 5] >> (x & 31)) & 1;
-  }
-
-  void setCell(uint32_t g[][WORDS], int x, int y, bool v) {
-    if (v)
-      g[y][x >> 5] |= (1u << (x & 31));
-    else
-      g[y][x >> 5] &= ~(1u << (x & 31));
-  }
-
+  // The icon: 3x3 grid, cells marked 1 are filled circles
+  // Row 0 (top):    [ ]  [X]  [ ]
+  // Row 1 (middle): [ ]  [ ]  [X]
+  // Row 2 (bottom): [X]  [X]  [ ]
   static constexpr uint8_t ICON_CELLS[3][3] = {{0, 1, 0}, {0, 0, 1}, {1, 1, 0}};
 
   void seedFromIcon() {
     memset(grid, 0, sizeof(grid));
+
+    // Each icon cell maps to a ~10x10 block of Life cells, centred on the display
+    // 3 cells * 14px each = 42px wide, centred in 128px -> margin = 43
     static constexpr int CELL_SIZE = 14;
     static constexpr int MARGIN_X = (W - 3 * CELL_SIZE) / 2;
     static constexpr int MARGIN_Y = (H - 3 * CELL_SIZE) / 2;
     static constexpr int DOT_RADIUS = 5;
+
     for (int row = 0; row < 3; row++) {
       for (int col = 0; col < 3; col++) {
         if (!ICON_CELLS[row][col])
@@ -55,7 +51,7 @@ class LifeMode : public DisplayMode {
             if (dx * dx + dy * dy <= DOT_RADIUS * DOT_RADIUS) {
               int px = cx + dx, py = cy + dy;
               if (px >= 0 && px < W && py >= 0 && py < H)
-                setCell(grid, px, py, true);
+                grid[py][px] = 1;
             }
           }
         }
@@ -66,7 +62,7 @@ class LifeMode : public DisplayMode {
   void seedRandom() {
     for (int y = 0; y < H; y++)
       for (int x = 0; x < W; x++)
-        setCell(grid, x, y, (nextRand() & 3) == 0);
+        grid[y][x] = (nextRand() & 3) == 0 ? 1 : 0;
   }
 
   uint16_t step() {
@@ -80,13 +76,12 @@ class LifeMode : public DisplayMode {
               continue;
             int nx = (x + dx + W) % W;
             int ny = (y + dy + H) % H;
-            if (getCell(grid, nx, ny))
-              n++;
+            n += grid[ny][nx];
           }
         }
-        bool alive = getCell(grid, x, y);
+        bool alive = grid[y][x];
         bool survives = alive ? (n == 2 || n == 3) : (n == 3);
-        setCell(next, x, y, survives);
+        next[y][x] = survives ? 1 : 0;
         if (survives)
           population++;
       }
@@ -113,6 +108,7 @@ class LifeMode : public DisplayMode {
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     uint16_t population = step();
 
+    // Detect death or stasis
     if (population == 0 || population == lastPopulation) {
       stasisCount++;
     } else {
@@ -129,20 +125,11 @@ class LifeMode : public DisplayMode {
     u8g2->clearBuffer();
     for (int y = 0; y < H; y++) {
       for (int x = 0; x < W; x++) {
-        if (getCell(grid, x, y))
+        if (grid[y][x])
           u8g2->drawPixel(x, y);
       }
       yield();
     }
     u8g2->sendBuffer();
   }
-
-#ifdef NATIVE_TEST
-
- public:
-  bool getCellPublic(int x, int y) const { return getCell(grid, x, y); }
-  void setCellPublic(int x, int y, bool v) { setCell(grid, x, y, v); }
-  static int getW() { return W; }
-  static int getH() { return H; }
-#endif
 };
