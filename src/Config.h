@@ -11,7 +11,7 @@
 namespace Config {
 // ===== Identity =====
 static constexpr const char* HOSTNAME = "esp-oled-screensaver";
-static constexpr const char* FW_VERSION = "platform-1.0.41";
+static constexpr const char* FW_VERSION = "platform-1.0.42";
 
 // ===== WiFi Credentials =====
 static constexpr const char* WIFI_SSID = secrets::WIFI_SSID;
