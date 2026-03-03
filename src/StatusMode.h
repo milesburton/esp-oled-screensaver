@@ -14,27 +14,24 @@ class StatusMode : public DisplayMode {
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_6x12_tf);
 
+    char buf[32];
+
     DisplayManager::drawStr(u8g2, 0, 12, Config::HOSTNAME);
 
-    u8g2->setCursor(0 + Config::runtime.xOffset, 28);
-    u8g2->print("FW: ");
-    u8g2->print(Config::FW_VERSION);
+    snprintf(buf, sizeof(buf), "FW: %s", Config::FW_VERSION);
+    DisplayManager::drawStr(u8g2, 0, 28, buf);
 
-    u8g2->setCursor(0 + Config::runtime.xOffset, 42);
-    u8g2->print("DRV: ");
-    u8g2->print(Config::runtime.getDriverName());
-    u8g2->print(" X:");
-    u8g2->print(Config::runtime.xOffset);
+    snprintf(buf, sizeof(buf), "DRV: %s X:%d", Config::runtime.getDriverName(),
+             Config::runtime.xOffset);
+    DisplayManager::drawStr(u8g2, 0, 42, buf);
 
-    u8g2->setCursor(0 + Config::runtime.xOffset, 56);
-    u8g2->print("IP: ");
     if (WiFi.status() == WL_CONNECTED) {
-      u8g2->print(WiFi.localIP());
+      snprintf(buf, sizeof(buf), "IP: %s", WiFi.localIP().toString().c_str());
     } else {
-      u8g2->print("(connecting)");
+      snprintf(buf, sizeof(buf), "IP: (connecting)");
     }
+    DisplayManager::drawStr(u8g2, 0, 56, buf);
 
-    // Border to test alignment
     DisplayManager::drawFrame(u8g2, 0, 0, Config::DISPLAY_WIDTH, Config::DISPLAY_HEIGHT);
 
     u8g2->sendBuffer();

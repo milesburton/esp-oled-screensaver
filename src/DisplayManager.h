@@ -60,7 +60,6 @@ class DisplayManager {
 
     uint8_t newRotation = Config::runtime.getU8G2Rotation();
     if (currentRotation != newRotation) {
-      // Map DisplayRotation enum to U8G2 rotation callbacks
       const u8g2_cb_t* rotation_cb[] = {U8G2_R0, U8G2_R1, U8G2_R2, U8G2_R3};
       u8g2->setDisplayRotation(rotation_cb[newRotation]);
       currentRotation = newRotation;
@@ -87,7 +86,6 @@ class DisplayManager {
     if (!Config::runtime.oledEnabled || !u8g2 || !currentMode)
       return;
 
-    // Check for rotation changes
     applyRotation();
 
     uint32_t now = millis();
@@ -116,7 +114,6 @@ class DisplayManager {
 
   Config::DisplayRotation getRotation() const { return Config::runtime.rotation; }
 
-  // Drawing helpers with X offset
   static void drawPixel(U8G2* u8g2, int x, int y) {
     u8g2->drawPixel(x + Config::runtime.xOffset, y);
   }

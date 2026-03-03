@@ -11,6 +11,7 @@
 #include "../../src/SonicMode.h"
 #include "../../src/StarfieldMode.h"
 #include "../../src/StatusMode.h"
+#include "../../src/UpdateChecker.h"
 #include "../../src/WeatherMode.h"
 
 #include <cmath>
@@ -550,6 +551,34 @@ test(PacManModeTest, MazeHasAtLeastOneCorridor) {
       if (!mode.testIsWall(c, r))
         corridors++;
   assertTrue(corridors > 20);
+}
+
+test(UpdateCheckerTest, NewerMajorIsNewer) {
+  assertTrue(UpdateChecker::isNewerVersion("2.0.0", "1.0.0"));
+}
+
+test(UpdateCheckerTest, OlderMajorIsNotNewer) {
+  assertFalse(UpdateChecker::isNewerVersion("1.0.0", "2.0.0"));
+}
+
+test(UpdateCheckerTest, NewerMinorIsNewer) {
+  assertTrue(UpdateChecker::isNewerVersion("1.1.0", "1.0.0"));
+}
+
+test(UpdateCheckerTest, NewerPatchIsNewer) {
+  assertTrue(UpdateChecker::isNewerVersion("1.0.1", "1.0.0"));
+}
+
+test(UpdateCheckerTest, SameVersionIsNotNewer) {
+  assertFalse(UpdateChecker::isNewerVersion("1.0.0", "1.0.0"));
+}
+
+test(UpdateCheckerTest, OlderPatchIsNotNewer) {
+  assertFalse(UpdateChecker::isNewerVersion("1.0.0", "1.0.1"));
+}
+
+test(UpdateCheckerTest, MajorTakesPrecedenceOverMinor) {
+  assertFalse(UpdateChecker::isNewerVersion("1.9.9", "2.0.0"));
 }
 
 void setup() {

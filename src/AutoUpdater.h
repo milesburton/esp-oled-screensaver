@@ -127,8 +127,8 @@ inline void attemptAutoUpdate() {
 
   // Start new download attempt
   if (currentState == UpdateState::IDLE) {
-    Logger::printf("AutoUpdater: starting auto-update from %s to v%s",
-                   UpdateChecker::getAvailableVersion(), UpdateChecker::getAvailableVersion());
+    Logger::printf("AutoUpdater: starting auto-update from v%s to v%s", Config::FW_VERSION,
+                   UpdateChecker::getAvailableVersion());
     currentState = UpdateState::DOWNLOADING;
     updateStartMs = now;
     lastUpdateAttemptMs = now;

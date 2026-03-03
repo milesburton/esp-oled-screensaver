@@ -84,11 +84,6 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
   }
   tagName.toCharArray(entry.version, 16);
 
-  // Extract board from assets (look for "firmware.bin" asset)
-  pos = json.indexOf("\"browser_download_url\":\"");
-  if (pos < 0)
-    return false;
-
   // For now, hardcode board (manifest has "d1_mini")
   snprintf(entry.board, sizeof(entry.board), "%s", "d1_mini");
 
