@@ -29,13 +29,14 @@ test(UpdateCheckerTest, VersionComparisonMajorOlder) {
   assertEqual(UpdateChecker::isNewerVersion("0.9.9", "1.0.0"), false);
 }
 
-// Test GitHub JSON parsing
+// Test GitHub JSON parsing — uses real GitHub API format (spaces after colons)
 test(UpdateCheckerTest, ParseGitHubReleaseValid) {
   UpdateChecker::ManifestEntry entry;
 
-  // Simplified GitHub API response snippet
   String json =
-      R"({"tag_name":"v1.0.45","browser_download_url":"https://github.com/user/repo/releases/download/v1.0.45/firmware.bin"})";
+      "{\"tag_name\": \"v1.0.45\","
+      "\"browser_download_url\": "
+      "\"https://github.com/user/repo/releases/download/v1.0.45/firmware.bin\"}";
 
   bool result = UpdateChecker::parseGitHubRelease(json, entry);
 
@@ -47,7 +48,7 @@ test(UpdateCheckerTest, ParseGitHubReleaseValid) {
 
 test(UpdateCheckerTest, ParseGitHubReleaseMissingTagName) {
   UpdateChecker::ManifestEntry entry;
-  String json = R"({"browser_download_url":"https://example.com/firmware.bin"})";
+  String json = "{\"browser_download_url\": \"https://example.com/firmware.bin\"}";
 
   bool result = UpdateChecker::parseGitHubRelease(json, entry);
 
@@ -56,7 +57,7 @@ test(UpdateCheckerTest, ParseGitHubReleaseMissingTagName) {
 
 test(UpdateCheckerTest, ParseGitHubReleaseMissingDownloadUrl) {
   UpdateChecker::ManifestEntry entry;
-  String json = R"({"tag_name":"v1.0.45"})";
+  String json = "{\"tag_name\": \"v1.0.45\"}";
 
   bool result = UpdateChecker::parseGitHubRelease(json, entry);
 
@@ -66,9 +67,10 @@ test(UpdateCheckerTest, ParseGitHubReleaseMissingDownloadUrl) {
 test(UpdateCheckerTest, ParseGitHubReleaseVersionWithoutPrefix) {
   UpdateChecker::ManifestEntry entry;
 
-  // Some releases may not have 'v' prefix
   String json =
-      R"({"tag_name":"1.0.45","browser_download_url":"https://github.com/user/repo/releases/download/1.0.45/firmware.bin"})";
+      "{\"tag_name\": \"1.0.45\","
+      "\"browser_download_url\": "
+      "\"https://github.com/user/repo/releases/download/1.0.45/firmware.bin\"}";
 
   bool result = UpdateChecker::parseGitHubRelease(json, entry);
 

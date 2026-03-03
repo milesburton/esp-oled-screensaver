@@ -58,16 +58,18 @@ inline void reset() {
 }
 
 inline bool shouldCheck(uint32_t nowMs) {
-  if (!UpdateManager::isAutoUpdateEnabled()) return false;
-  if (lastCheckMs == 0) return true;
+  if (!UpdateManager::isAutoUpdateEnabled())
+    return false;
+  if (lastCheckMs == 0)
+    return true;
   return (nowMs - lastCheckMs >= CHECK_INTERVAL_MS);
 }
 
 inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
-  int pos = json.indexOf("\"tag_name\":\"");
+  int pos = json.indexOf("\"tag_name\": \"");
   if (pos < 0)
     return false;
-  pos += 12;
+  pos += 13;
   int end = json.indexOf("\"", pos);
   if (end < 0)
     return false;
@@ -80,10 +82,10 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
 
   snprintf(entry.board, sizeof(entry.board), "%s", "d1_mini");
 
-  pos = json.indexOf("\"browser_download_url\":\"");
+  pos = json.indexOf("\"browser_download_url\": \"");
   if (pos < 0)
     return false;
-  pos += 24;
+  pos += 25;
   end = json.indexOf("\"", pos);
   if (end < 0 || end - pos >= 256)
     return false;
