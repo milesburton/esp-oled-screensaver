@@ -5,6 +5,7 @@
 #include <ESP8266HTTPClient.h>
 
 #include <Updater.h>
+#include <WiFiClientSecure.h>
 
 #include "Config.h"
 #include "Logger.h"
@@ -149,7 +150,8 @@ inline void performUpdate() {
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
-  WiFiClient wifiClient;
+  WiFiClientSecure wifiClient;
+  wifiClient.setInsecure();
 
   if (!http.begin(wifiClient, downloadUrl)) {
     Logger::println("AutoUpdater: ERROR - failed to begin HTTP request");
@@ -195,13 +197,12 @@ inline void performUpdate() {
   bytesDownloaded = 0;
   WiFiClient* stream = http.getStreamPtr();
   uint8_t buffer[512];
-  size_t bytesRead;
 
   currentState = UpdateState::FLASHING;
 
-  while (http.connected() && (bytesRead > 0 || bytesRead == 0)) {
+  while (http.connected() && bytesDownloaded < totalBytesExpected) {
     if (stream->available()) {
-      bytesRead = stream->readBytes(buffer, sizeof(buffer));
+      size_t bytesRead = stream->readBytes(buffer, sizeof(buffer));
       if (bytesRead > 0) {
         if (Update.write(buffer, bytesRead) != bytesRead) {
           Logger::printf("AutoUpdater: Update.write() failed, error: %u", Update.getError());
