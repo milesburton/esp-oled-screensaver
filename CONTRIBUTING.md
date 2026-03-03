@@ -2,119 +2,45 @@
 
 ## Setup
 
-**Development Container (Recommended)**:
+**Dev container (recommended):** open in VS Code and click "Reopen in Container".
 
-```bash
-code .
-# Click "Reopen in Container"
-```
-
-See [.devcontainer/README.md](.devcontainer/README.md).
-
-**Local Installation**:
+**Local:**
 
 ```bash
 git clone https://github.com/milesburton/esp-oled-screensaver.git
 cd esp-oled-screensaver
 cp secrets.h.template secrets.h
-
 pip install pre-commit
 pre-commit install --hook-type commit-msg
 ```
 
 ## Code Style
 
-- **Indentation**: 2 spaces
-- **Line length**: 100 characters max
-- **Classes**: `PascalCase`
-- **Methods/variables**: `camelCase`
-- **Constants**: `UPPER_CASE` or `kCamelCase`
-- **Braces**: Attached (K&R style)
+- 2-space indentation, 100-character line limit
+- `PascalCase` classes, `camelCase` methods and variables, `UPPER_CASE` constants
+- Google C++ style enforced by clang-format and cpplint via pre-commit
 
 ## Commits
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+[Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```
 <type>(<scope>): <subject>
-<blank line>
-<body>
 ```
 
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`
 
-**Examples**:
+## Adding a Display Mode
 
-```bash
-feat(modes): add temperature display
-fix(display): correct X-offset for SH1106
-docs(readme): update build instructions
-test(logger): add printf test with multiple args
-```
-
-## Adding Display Modes
-
-1. Create mode in `src/MyMode.h`:
-
-```cpp
-#pragma once
-#include "DisplayMode.h"
-
-class MyMode : public DisplayMode {
-public:
-  const char* getName() const override {
-    return "mymode";
-  }
-
-  void update(U8G2* u8g2, uint32_t deltaMs) override {
-    u8g2->clearBuffer();
-    u8g2->drawStr(0, 20, "My Mode");
-    u8g2->sendBuffer();
-  }
-};
-```
-
-2. Register in `src/ESP8266-OLED-Experiment.ino` and add to `setModeByName` in `src/ModeHelper.h`, `setModes` in `src/NetworkManager.h` and `src/TelnetConsole.h`.
-
-3. Add tests in `test/test_DisplayModes/test_main.cpp`
-
-4. Update README.md with the new mode
+1. Create `src/MyMode.h` implementing `DisplayMode` (`getName`, `update`).
+2. Register in all four files: `ESP8266-OLED-Experiment.ino`, `ModeHelper.h`, `NetworkManager.h`, `TelnetConsole.h`, and `ScreensaverMode.h`.
+3. Add tests in `test/test_DisplayModes/test_main.cpp`.
+4. Update the mode table in `README.md`.
 
 ## Pull Requests
 
-1. Create feature branch: `git checkout -b feat/name`
-2. Make changes and write tests
-3. Commit with conventional format
-4. Push: `git push origin feat/name`
+1. Branch: `git checkout -b feat/name`
+2. Implement with tests
+3. `pre-commit run --all-files` passes
+4. `pio test --without-uploading` passes
 5. Submit PR
-
-## Testing
-
-```bash
-# Run all checks
-pre-commit run --all-files
-
-# Run tests
-pio test --without-uploading
-```
-
-Aim for >80% test coverage.
-
-## Code Quality
-
-Pre-commit hooks automatically run:
-
-- clang-format (C++ formatting)
-- cpplint (linting)
-- markdownlint (docs)
-- Conventional commit validation
-
-Enforce before commit.
-
-## Questions
-
-Open an issue or contact maintainers.
-
-## License
-
-By contributing, your work is licensed under the project license.

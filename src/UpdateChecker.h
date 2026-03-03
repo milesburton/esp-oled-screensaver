@@ -11,14 +11,22 @@
 #include <cstdio>
 
 namespace UpdateChecker {
-// Simple version comparison: returns true if remote > local
-// Versions are "major.minor.patch" format
+// Advance past any non-numeric prefix (e.g. "v", "platform-") so sscanf can
+// parse the numeric semver part regardless of the prefix used.
+inline const char* skipVersionPrefix(const char* s) {
+  while (*s && !isdigit(static_cast<unsigned char>(*s)))
+    ++s;
+  return s;
+}
+
+// Simple version comparison: returns true if remote > local.
+// Accepts any prefix before the numeric part (e.g. "v1.0.48", "platform-1.0.47").
 inline bool isNewerVersion(const char* remoteVersionStr, const char* localVersionStr) {
   int rMajor = 0, rMinor = 0, rPatch = 0;
   int lMajor = 0, lMinor = 0, lPatch = 0;
 
-  sscanf(remoteVersionStr, "%d.%d.%d", &rMajor, &rMinor, &rPatch);
-  sscanf(localVersionStr, "%d.%d.%d", &lMajor, &lMinor, &lPatch);
+  sscanf(skipVersionPrefix(remoteVersionStr), "%d.%d.%d", &rMajor, &rMinor, &rPatch);
+  sscanf(skipVersionPrefix(localVersionStr), "%d.%d.%d", &lMajor, &lMinor, &lPatch);
 
   if (rMajor != lMajor)
     return rMajor > lMajor;
@@ -35,6 +43,7 @@ struct ManifestEntry {
 };
 
 static constexpr uint32_t CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;  // 6 hours
+static constexpr uint32_t FORCE_CHECK_COOLDOWN_MS = 60 * 1000;     // 1 minute between forced checks
 static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;                 // 10 seconds
 
 // GitHub API endpoint for latest release (no auth needed for public repos)
@@ -104,21 +113,10 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
   return true;
 }
 
-// Check for updates: fetch latest release from GitHub API, compare version, set flag
-inline void checkForUpdates() {
+// Fetch latest release from GitHub API, compare version, set updateAvailable flag.
+// Always runs — callers are responsible for deciding whether to invoke this.
+inline void fetchAndCompare() {
   uint32_t now = millis();
-
-  if (!shouldCheck(now)) {
-    return;
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Logger::println("UpdateChecker: WiFi not connected, skipping check");
-    lastCheckMs = now;  // Don't retry immediately
-    return;
-  }
-
-  Logger::printf("UpdateChecker: checking for updates (interval=6h)...");
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
@@ -182,16 +180,35 @@ inline void checkForUpdates() {
   lastCheckMs = now;
 }
 
-// Force a manual check regardless of interval (for /force-check route)
+// Called from main loop; honours the 6-hour interval and the enabled flag.
+inline void checkForUpdates() {
+  if (!shouldCheck(millis())) {
+    return;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    Logger::println("UpdateChecker: WiFi not connected, skipping check");
+    lastCheckMs = millis();
+    return;
+  }
+  Logger::printf("UpdateChecker: checking for updates (interval=6h)...");
+  fetchAndCompare();
+}
+
+// Force a manual check regardless of interval or auto-update setting (for /force-check route).
+// Enforces a 1-minute cooldown to prevent hammering the GitHub API.
 inline void forceCheck() {
   if (WiFi.status() != WL_CONNECTED) {
     Logger::println("UpdateChecker: WiFi not connected, cannot check");
     return;
   }
-
+  uint32_t now = millis();
+  if (lastCheckMs != 0 && (now - lastCheckMs < FORCE_CHECK_COOLDOWN_MS)) {
+    Logger::printf("UpdateChecker: force-check cooldown (%lus remaining)",
+                   (FORCE_CHECK_COOLDOWN_MS - (now - lastCheckMs)) / 1000);
+    return;
+  }
   Logger::println("UpdateChecker: FORCED CHECK triggered manually");
-  lastCheckMs = 0;  // Reset interval timer
-  checkForUpdates();
+  fetchAndCompare();
 }
 
 inline bool isUpdateAvailable() {

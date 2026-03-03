@@ -1,46 +1,9 @@
-# ESP8266 OLED Screensaver - Display with WiFi
+# ESP8266 OLED Screensaver
 
-Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes, WiFi connectivity, OTA updates, and remote debugging via Telnet.
-
-## Features
-
-**OLED Display**
-
-- Runtime-switchable drivers (SSD1306 / SH1106)
-- Configurable X-offset for alignment
-- Pluggable display mode system
-
-**Networking**
-
-- WiFi connectivity with auto-reconnect
-- Web interface for configuration and OTA updates
-- Telnet console (port 23) for remote debugging
-- Multi-board support: Wemos D1 Mini, NodeMCU, Generic ESP8266
-
-**Display Modes** (Extensible)
-
-- Status: Device info, IP address, firmware version
-- Boing: Animated bouncing ball with physics and rotation
-- Weather: Live temperature via Open-Meteo API
-- Clock: NTP-synced digital clock with date
-- Breakout: Self-playing brick breaker with AI paddle
-- Pac-Man: Self-playing maze demo with ghost AI
-
-**Development**
-
-- Modular architecture with single responsibility principle
-- Pre-commit hooks (clang-format, cpplint, conventional commits)
-- Automated tests and CI/CD
-- Development container for zero-config setup
+Modular ESP8266 firmware for 128×64 OLED displays with WiFi, OTA updates, and a Telnet console.
 
 ## Hardware
 
-**Required**
-
-- ESP8266 board (NodeMCU, Wemos D1 Mini, etc.)
-- 128x64 OLED display (SSD1306 or SH1106)
-
-**Wiring**
 | OLED Pin | ESP8266 Pin |
 |----------|-------------|
 | SDA      | GPIO0       |
@@ -48,201 +11,132 @@ Modular ESP8266 firmware for 128x64 OLED displays with extensible display modes,
 | VCC      | 3.3V        |
 | GND      | GND         |
 
-I2C Address: 0x3C (configurable at compile time)
+Supported boards: Wemos D1 Mini, NodeMCU, Generic ESP8266. Supported drivers: SSD1306, SH1106 (runtime-switchable).
 
 ## Quick Start
 
-### With Development Container (Recommended)
+**Dev container (recommended):**
 
 ```bash
-# Prerequisites: Docker and VS Code with Remote Containers extension
-code .
-# Click "Reopen in Container"
+code .  # Click "Reopen in Container"
 ./build.sh esp8266_d1_mini
 ```
 
-See [.devcontainer/README.md](.devcontainer/README.md) for full details.
-
-### Local Installation
+**Local:**
 
 ```bash
 pip install platformio pre-commit
 pre-commit install --hook-type commit-msg
-
-# Configure credentials
-cp secrets.h.template secrets.h
-# Edit secrets.h with WiFi credentials
-
-# Build
+cp secrets.h.template secrets.h  # Add WiFi credentials
 ./build.sh esp8266_d1_mini
-
-# Upload via OTA
-# Navigate to http://<device-ip>/update
 ```
 
-## Building
+## Display Modes
 
-Supported environments in `platformio.ini`:
+| Mode        | Description                               |
+|-------------|-------------------------------------------|
+| `status`    | Device info, IP address, firmware version |
+| `boing`     | Bouncing ball with physics and spin       |
+| `weather`   | Live temperature via Open-Meteo API       |
+| `clock`     | NTP-synced digital clock with date        |
+| `breakout`  | Self-playing brick breaker with AI paddle |
+| `pacman`    | Self-playing Pac-Man with ghost AI        |
+| `starfield` | Parallax star field animation             |
+| `life`      | Conway's Game of Life                     |
+| `sonic`     | Sonic the Hedgehog running animation      |
 
-- `esp8266_d1_mini` (4MB) - Recommended
-- `esp8266_nodmcu` (4MB)
-- `esp8266_generic` (1MB)
+The `screensaver` mode cycles through all of the above automatically.
 
-```bash
-# Build for specific board
-./build.sh esp8266_nodmcu
+## Web Interface
 
-# Build and test
-pio run -e esp8266_d1_mini
-pio test --without-uploading
+Browse to `http://<device-ip>/` to switch modes, configure the OLED driver and X-offset, trigger OTA updates, and manage auto-update settings.
 
-# Monitor serial output
-pio device monitor -b 115200
+OTA upload: `http://<device-ip>/update` — credentials in `secrets.h`.
+
+## Telnet Console
+
+```
+telnet <device-ip> 23
 ```
 
-Output binaries are written to `firmware/` directory.
-
-See [BUILDING.md](BUILDING.md) for complete build guide.
-
-## Usage
-
-**Web Interface**: `http://<device-ip>/`
-
-- Device status
-- Mode switching
-- OLED configuration
-- OTA firmware updates
-
-**Telnet Console**: `telnet <device-ip> 23`
-
-- `help` - Command list
-- `status` - Device status
-- `mode status|boing|weather|clock|breakout|pacman` - Switch display mode
-- `drv ssd1306|sh1106` - Set OLED driver
-- `xoff <int>` - Set X offset (e.g., `xoff 0`)
-- `oled on|off` - Enable/disable display
-- `reboot` - Restart device
-
-**OTA Updates**: `http://<device-ip>/update`
-
-- Username: `admin`
-- Password: `test-ota-password` (for pre-built releases) or check `secrets.h` for custom builds
-- Upload new `.bin` firmware file
+| Command | Description |
+|---------|-------------|
+| `help` | Command list |
+| `status` | Device status |
+| `mode <name>` | Switch mode (`status`, `boing`, `weather`, `clock`, `breakout`, `pacman`, `starfield`, `life`, `sonic`, `screensaver`) |
+| `drv ssd1306\|sh1106` | Set OLED driver |
+| `xoff <n>` | Set X offset |
+| `oled on\|off` | Enable/disable display |
+| `reboot` | Restart device |
 
 ## Architecture
 
 ```
 src/
 ├── ESP8266-OLED-Experiment.ino  # Main sketch
-├── Config.h / Config.cpp        # Configuration & constants
-├── Logger.h                     # Unified logging
-├── DisplayManager.h             # OLED management
-├── NetworkManager.h             # WiFi & HTTP server
+├── Config.h / Config.cpp        # Hardware pins and runtime settings
+├── Logger.h                     # Serial + Telnet logging
+├── DisplayManager.h             # OLED driver lifecycle
+├── NetworkManager.h             # WiFi, HTTP server, OTA
 ├── TelnetConsole.h              # Remote console
-├── ModeHelper.h                 # Mode switching
-├── DisplayMode.h                # Mode base class
-├── StatusMode.h                 # Device info display
-├── BoingMode.h                  # Bouncing ball animation
-├── WeatherMode.h                # Live weather via Open-Meteo
-├── ClockMode.h                  # NTP-synced clock
-├── BreakoutMode.h               # Self-playing brick breaker
-└── PacManMode.h                 # Self-playing Pac-Man demo
-
-test/
-├── test_Config/
-├── test_Logger/
-├── test_DisplayModes/
-└── integration/
+├── ModeHelper.h                 # Mode name → instance routing
+├── DisplayMode.h                # Abstract base class
+├── ScreensaverMode.h            # Cycles through all modes
+├── StatusMode.h
+├── BoingMode.h
+├── WeatherMode.h
+├── ClockMode.h
+├── BreakoutMode.h
+├── PacManMode.h
+├── StarfieldMode.h
+├── LifeMode.h
+├── SonicMode.h
+├── UpdateManager.h              # EEPROM-backed auto-update settings
+├── UpdateChecker.h              # GitHub API version polling
+└── AutoUpdater.h                # OTA download and flash
 ```
 
-### Core Components
+## Adding a Display Mode
 
-- **Config**: Hardware pins, runtime settings, OLED driver selection
-- **Logger**: Serial + Telnet logging
-- **DisplayManager**: OLED driver lifecycle and mode switching
-- **NetworkManager**: WiFi, HTTP server, OTA
-- **TelnetConsole**: Remote debugging interface
-- **DisplayMode**: Abstract base for all display implementations
-
-## Adding Display Modes
-
-Create a new header file inheriting from `DisplayMode`:
+1. Create `src/MyMode.h` implementing `DisplayMode`:
 
 ```cpp
 #pragma once
 #include "DisplayMode.h"
 
 class MyMode : public DisplayMode {
-public:
-  const char* getName() const override {
-    return "mymode";
-  }
-
+ public:
+  const char* getName() const override { return "mymode"; }
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     u8g2->clearBuffer();
-    u8g2->setFont(u8g2_font_10x20_tf);
     u8g2->drawStr(10, 30, "Hello!");
     u8g2->sendBuffer();
   }
 };
 ```
 
-Register in the main `.ino` file and expose via web/Telnet interfaces.
+2. Register in `ESP8266-OLED-Experiment.ino`, `ModeHelper.h`, `NetworkManager.h`, `TelnetConsole.h`, and `ScreensaverMode.h`.
+3. Add tests in `test/test_DisplayModes/test_main.cpp`.
 
-## Development
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
-Code standards enforced by pre-commit hooks:
+## Auto-Update
 
-- **C++ Formatting**: clang-format (Google style, 100 char lines)
-- **Linting**: cpplint
-- **Commits**: Conventional commits format
-- **Testing**: AUnit framework
+The device can check GitHub Releases every 6 hours and flash new firmware automatically. Disabled by default — enable via the web interface or `curl http://<device-ip>/autoupdate?on=1`.
 
-Run checks manually:
+See [AUTO_UPDATE.md](AUTO_UPDATE.md).
 
-```bash
-pre-commit run --all-files
-pio test --without-uploading
-```
+## Recovery
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [RECOVERY.md](RECOVERY.md) if the device is unreachable.
 
-## CI/CD Trigger Policy
+## CI/CD
 
-- Pushes to `main` run quality checks (linting, native tests, embedded build verification)
-- Releases are created from tags (`v*` / `release-*`) or manual deployment workflow dispatch
-
-## Configuration
-
-Edit compile-time constants in `src/Config.h`:
-
-- OLED SDA/SCL pins (GPIO0, GPIO2)
-- WiFi hostname
-- HTTP/Telnet ports
-- Default driver and X-offset
-
-Runtime configuration via web interface or Telnet console:
-
-- OLED driver type
-- X-offset for alignment
-- Display enable/disable
-- Active display mode
-
-## Performance
-
-- Main loop: ~1ms cycle time
-- Boing / Breakout / Pac-Man: 25 FPS
-- Clock: 2 FPS
-- Status: 2.5 FPS
-- Weather: 0.2 FPS (fetch-driven, 10-minute interval)
-- WiFi status: logged every second
+Pushes to `main` run linting, tests, and an embedded build check. Tagging `v*` triggers a release build that uploads `firmware.bin` to GitHub Releases.
 
 ## References
 
-- [PlatformIO Docs](https://docs.platformio.org/)
-- [ESP8266 Arduino Core](https://github.com/esp8266/Arduino)
-- [U8g2 Graphics Library](https://github.com/olikraus/u8g2)
+- [PlatformIO](https://docs.platformio.org/)
+- [U8g2](https://github.com/olikraus/u8g2)
 - [ElegantOTA](https://github.com/ayushsharma82/ElegantOTA)
-- [Conventional Commits](https://www.conventionalcommits.org/)
-
-## Workflow Testing
+- [Open-Meteo](https://open-meteo.com/)

@@ -608,6 +608,18 @@ test(UpdateCheckerTest, MajorTakesPrecedenceOverMinor) {
   assertFalse(UpdateChecker::isNewerVersion("1.9.9", "2.0.0"));
 }
 
+test(UpdateCheckerTest, VPrefixRemoteIsDetected) {
+  assertTrue(UpdateChecker::isNewerVersion("v1.0.48", "1.0.47"));
+}
+
+test(UpdateCheckerTest, PlatformPrefixLocalIsHandled) {
+  assertTrue(UpdateChecker::isNewerVersion("1.0.48", "platform-1.0.47"));
+}
+
+test(UpdateCheckerTest, BothPrefixedSameVersionIsNotNewer) {
+  assertFalse(UpdateChecker::isNewerVersion("v1.0.47", "platform-1.0.47"));
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial)
