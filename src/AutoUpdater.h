@@ -80,6 +80,9 @@ inline void reset() {
   lastUpdateAttemptMs = millis();
 }
 
+// Forward declaration
+inline void performUpdate();
+
 // Attempt to perform OTA update if update is available
 // Called periodically from NetworkManager::update()
 inline void attemptAutoUpdate() {
@@ -146,9 +149,9 @@ inline void performUpdate() {
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
-  http.setConnectTimeout(5000);
+  WiFiClient wifiClient;
 
-  if (!http.begin(downloadUrl)) {
+  if (!http.begin(wifiClient, downloadUrl)) {
     Logger::println("AutoUpdater: ERROR - failed to begin HTTP request");
     currentState = UpdateState::ERROR_DOWNLOAD;
     return;
@@ -203,7 +206,7 @@ inline void performUpdate() {
         if (Update.write(buffer, bytesRead) != bytesRead) {
           Logger::printf("AutoUpdater: Update.write() failed, error: %u", Update.getError());
           http.end();
-          Update.abort();
+          Update.end();
           currentState = UpdateState::ERROR_FLASH;
           return;
         }
@@ -221,7 +224,7 @@ inline void performUpdate() {
     if (millis() - updateStartMs > (HTTP_TIMEOUT_MS + 10000)) {
       Logger::println("AutoUpdater: ERROR - download timeout");
       http.end();
-      Update.abort();
+      Update.end();
       currentState = UpdateState::ERROR_DOWNLOAD;
       return;
     }
@@ -233,7 +236,7 @@ inline void performUpdate() {
   if (bytesDownloaded != totalBytesExpected) {
     Logger::printf("AutoUpdater: ERROR - size mismatch (got %u, expected %u)", bytesDownloaded,
                    totalBytesExpected);
-    Update.abort();
+    Update.end();
     currentState = UpdateState::ERROR_DOWNLOAD;
     return;
   }

@@ -103,7 +103,7 @@ class TelnetConsole {
 
   void update() {
     if (server.hasClient()) {
-      WiFiClient incoming = server.available();
+      WiFiClient incoming = server.accept();
       if (!client || !client.connected()) {
         client = incoming;
         client.setNoDelay(true);

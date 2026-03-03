@@ -104,7 +104,7 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
 
   // SHA256 not available in GitHub API, would need to add to release body or separate file
   // For now, use placeholder (can enhance later with checksum file)
-  snprintf(entry.sha256, sizeof(entry.sha256), "");
+  entry.sha256[0] = '\0';
 
   return true;
 }
@@ -127,8 +127,9 @@ inline void checkForUpdates() {
 
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
+  WiFiClient wifiClient;
 
-  if (!http.begin(GITHUB_API_URL)) {
+  if (!http.begin(wifiClient, GITHUB_API_URL)) {
     Logger::println("UpdateChecker: ERROR - failed to begin HTTP request");
     lastCheckMs = now;
     return;
