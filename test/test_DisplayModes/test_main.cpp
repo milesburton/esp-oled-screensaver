@@ -157,9 +157,9 @@ test(DisplayModeTest, NamesAreUnique) {
   LifeMode life;
   SonicMode sonic;
 
-  const char* names[] = {status.getName(), boing.getName(),    weather.getName(),
-                         clock.getName(),  breakout.getName(), pacman.getName(),
-                         starfield.getName(), life.getName(),  sonic.getName()};
+  const char* names[] = {status.getName(),    boing.getName(),    weather.getName(),
+                         clock.getName(),     breakout.getName(), pacman.getName(),
+                         starfield.getName(), life.getName(),     sonic.getName()};
   static constexpr int N = 9;
   for (int i = 0; i < N; i++)
     for (int j = i + 1; j < N; j++)

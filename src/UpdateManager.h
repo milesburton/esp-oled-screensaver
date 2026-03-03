@@ -34,8 +34,7 @@ inline void initialize() {
 }
 
 inline bool hasValidSettings() {
-  return EEPROM.read(MAGIC_OFFSET) == MAGIC_NUMBER && 
-         EEPROM.read(SCHEMA_OFFSET) == SCHEMA_VERSION;
+  return EEPROM.read(MAGIC_OFFSET) == MAGIC_NUMBER && EEPROM.read(SCHEMA_OFFSET) == SCHEMA_VERSION;
 }
 
 inline bool isAutoUpdateEnabled() {
@@ -94,10 +93,8 @@ inline void clearSettings() {
 }
 
 inline void printSettings() {
-  Logger::printf("UpdateMgr: valid=%d, enabled=%d, channel=%u",
-                 hasValidSettings(),
-                 isAutoUpdateEnabled(),
-                 getUpdateChannel());
+  Logger::printf("UpdateMgr: valid=%d, enabled=%d, channel=%u", hasValidSettings(),
+                 isAutoUpdateEnabled(), getUpdateChannel());
 }
 
 }  // namespace UpdateManager

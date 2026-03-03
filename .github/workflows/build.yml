@@ -16,7 +16,7 @@ jobs:
       matrix:
         board:
           - esp8266_d1_mini
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
             - **Version**: ${{ steps.get_version.outputs.version }}
             - **Build**: ${{ github.run_number }}
             - **Commit**: ${{ github.sha }}
-            
+
             ### Update Instructions
             1. Download `firmware.bin`
             2. Verify SHA256: `sha256sum -c firmware.sha256`
@@ -81,7 +81,7 @@ jobs:
           VERSION="${{ steps.get_version.outputs.version }}"
           SHA256=$(cat firmware.sha256 | awk '{print $1}')
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/firmware.bin"
-          
+
           cat > manifest.json << EOF
           {
             "fw_version": "$VERSION",
@@ -92,7 +92,7 @@ jobs:
             "channel": "stable"
           }
           EOF
-          
+
           cat manifest.json
 
       - name: Upload manifest to release

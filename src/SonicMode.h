@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pgmspace.h>
 #include <math.h>
+#include <pgmspace.h>
 
 #include "Config.h"
 #include "DisplayManager.h"

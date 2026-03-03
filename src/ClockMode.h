@@ -97,8 +97,8 @@ class ClockMode : public DisplayMode {
     // 1. First update (lastNtpSyncMs == 0)
     // 2. WiFi just connected
     // 3. Re-sync interval elapsed (every hour)
-    bool shouldSync = (_lastNtpSyncMs == 0) || 
-                      (now - _lastNtpSyncMs >= Config::NTP_RESYNC_INTERVAL_MS);
+    bool shouldSync =
+        (_lastNtpSyncMs == 0) || (now - _lastNtpSyncMs >= Config::NTP_RESYNC_INTERVAL_MS);
     if (shouldSync && WiFi.status() == WL_CONNECTED) {
       configTime(Config::NTP_UTC_OFFSET_HOURS * 3600, 0, "pool.ntp.org", "time.nist.gov");
       _lastNtpSyncMs = now;

@@ -79,7 +79,8 @@ test(UpdateCheckerTest, ParseGitHubReleaseVersionWithoutPrefix) {
 void setup() {
 #ifdef EPOXY_DUINO
   Serial.begin(115200);
-  while (!Serial) delay(100);
+  while (!Serial)
+    delay(100);
 #endif
   delay(1000);
 }

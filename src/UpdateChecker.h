@@ -1,11 +1,14 @@
 #pragma once
 
 #include <Arduino.h>
+
 #include <ESP8266HTTPClient.h>
 
 #include "Config.h"
 #include "Logger.h"
 #include "UpdateManager.h"
+
+#include <cstdio>
 
 namespace UpdateChecker {
 // Simple version comparison: returns true if remote > local
@@ -17,8 +20,10 @@ inline bool isNewerVersion(const char* remoteVersionStr, const char* localVersio
   sscanf(remoteVersionStr, "%d.%d.%d", &rMajor, &rMinor, &rPatch);
   sscanf(localVersionStr, "%d.%d.%d", &lMajor, &lMinor, &lPatch);
 
-  if (rMajor != lMajor) return rMajor > lMajor;
-  if (rMinor != lMinor) return rMinor > lMinor;
+  if (rMajor != lMajor)
+    return rMajor > lMajor;
+  if (rMinor != lMinor)
+    return rMinor > lMinor;
   return rPatch > lPatch;
 }
 
@@ -30,7 +35,7 @@ struct ManifestEntry {
 };
 
 static constexpr uint32_t CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;  // 6 hours
-static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;                  // 10 seconds
+static constexpr uint32_t HTTP_TIMEOUT_MS = 10000;                 // 10 seconds
 
 // GitHub API endpoint for latest release (no auth needed for public repos)
 // Returns JSON with asset URLs, version info, etc.
@@ -65,11 +70,13 @@ inline bool shouldCheck(uint32_t nowMs) {
 inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
   // Extract tag_name (GitHub version tag like "v1.0.45")
   int pos = json.indexOf("\"tag_name\":\"");
-  if (pos < 0) return false;
+  if (pos < 0)
+    return false;
   pos += 12;
   int end = json.indexOf("\"", pos);
-  if (end < 0) return false;
-  
+  if (end < 0)
+    return false;
+
   String tagName = json.substring(pos, end);
   // Remove 'v' prefix if present: "v1.0.45" → "1.0.45"
   if (tagName[0] == 'v') {
@@ -79,22 +86,25 @@ inline bool parseGitHubRelease(const String& json, ManifestEntry& entry) {
 
   // Extract board from assets (look for "firmware.bin" asset)
   pos = json.indexOf("\"browser_download_url\":\"");
-  if (pos < 0) return false;
-  
+  if (pos < 0)
+    return false;
+
   // For now, hardcode board (manifest has "d1_mini")
-  strcpy(entry.board, "d1_mini");
+  snprintf(entry.board, sizeof(entry.board), "%s", "d1_mini");
 
   // Find the first firmware.bin asset URL
   pos = json.indexOf("\"browser_download_url\":\"");
-  if (pos < 0) return false;
+  if (pos < 0)
+    return false;
   pos += 24;
   end = json.indexOf("\"", pos);
-  if (end < 0 || end - pos >= 256) return false;
+  if (end < 0 || end - pos >= 256)
+    return false;
   json.substring(pos, end).toCharArray(entry.download_url, 256);
 
   // SHA256 not available in GitHub API, would need to add to release body or separate file
   // For now, use placeholder (can enhance later with checksum file)
-  strcpy(entry.sha256, "");
+  snprintf(entry.sha256, sizeof(entry.sha256), "");
 
   return true;
 }
@@ -188,11 +198,17 @@ inline void forceCheck() {
   checkForUpdates();
 }
 
-inline bool isUpdateAvailable() { return updateAvailable; }
+inline bool isUpdateAvailable() {
+  return updateAvailable;
+}
 
-inline const char* getAvailableVersion() { return availableVersionStr; }
+inline const char* getAvailableVersion() {
+  return availableVersionStr;
+}
 
-inline const char* getDownloadUrl() { return downloadUrlStr; }
+inline const char* getDownloadUrl() {
+  return downloadUrlStr;
+}
 
 inline void printStatus() {
   Logger::printf("UpdateChecker: available=%s version=%s", updateAvailable ? "YES" : "NO",

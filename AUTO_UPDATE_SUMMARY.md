@@ -81,9 +81,9 @@ All three phases of the auto-update system have been successfully implemented, t
 │      ↓                                                  │
 │  Device reboots with new firmware ✓                    │
 └─────────────────────────────────────────────────────────┘
-         ↑                           
-         │ (every 6 hours)           
-         │                           
+         ↑
+         │ (every 6 hours)
+         │
 ┌─────────────────────────────────────────────────────────┐
 │  GitHub (Public Repo)                                   │
 │  ├─ Releases (firmware.bin)                            │
@@ -164,17 +164,17 @@ Once enabled:
 - **No credentials in firmware**
   - Uses GitHub's public Releases API
   - No PAT/token embedded
-  
+
 - **Secure by default**
   - Auto-update OFF by default
   - User must explicitly enable
   - Setting survives firmware upgrades
-  
+
 - **Public repository**
   - Code fully auditable
   - Release process transparent
   - Community can review changes
-  
+
 - **Safe fallback**
   - Manual `/update` route (ElegantOTA) always available
   - Device recoverable even if auto-update fails
@@ -196,15 +196,15 @@ src/
   UpdateChecker.h          # GitHub API polling + version detection
   AutoUpdater.h            # Binary download + flash logic
   NetworkManager.h         # Web routes + integration
-  
+
 .github/
   workflows/
     build.yml              # GitHub Actions CI: auto-build on release
-    
+
 test/
   test_UpdateChecker/
     test_main.cpp          # Unit tests (version comparison, JSON parsing)
-    
+
 docs/
   AUTO_UPDATE.md           # Comprehensive user & developer guide
   README.md                # (existing project README)

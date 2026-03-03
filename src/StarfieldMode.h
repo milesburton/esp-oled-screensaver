@@ -50,7 +50,8 @@ class StarfieldMode : public DisplayMode {
 
   void update(U8G2* u8g2, uint32_t deltaMs) override {
     uint8_t speed = (deltaMs > 50) ? 4 : (uint8_t)((deltaMs * 4 + 25) / 50);
-    if (speed < 1) speed = 1;
+    if (speed < 1)
+      speed = 1;
 
     u8g2->clearBuffer();
 
@@ -72,8 +73,10 @@ class StarfieldMode : public DisplayMode {
       // Closer stars are bigger/brighter
       if (stars[i].z < MAX_DEPTH / 4) {
         u8g2->drawPixel(sx, sy);
-        if (sx + 1 < W) u8g2->drawPixel(sx + 1, sy);
-        if (sy + 1 < H) u8g2->drawPixel(sx, sy + 1);
+        if (sx + 1 < W)
+          u8g2->drawPixel(sx + 1, sy);
+        if (sy + 1 < H)
+          u8g2->drawPixel(sx, sy + 1);
       } else {
         u8g2->drawPixel(sx, sy);
       }

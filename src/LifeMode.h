@@ -42,7 +42,8 @@ class LifeMode : public DisplayMode {
 
     for (int row = 0; row < 3; row++) {
       for (int col = 0; col < 3; col++) {
-        if (!ICON_CELLS[row][col]) continue;
+        if (!ICON_CELLS[row][col])
+          continue;
         int cx = MARGIN_X + col * CELL_SIZE + CELL_SIZE / 2;
         int cy = MARGIN_Y + row * CELL_SIZE + CELL_SIZE / 2;
         for (int dy = -DOT_RADIUS; dy <= DOT_RADIUS; dy++) {
@@ -71,7 +72,8 @@ class LifeMode : public DisplayMode {
         uint8_t n = 0;
         for (int dy = -1; dy <= 1; dy++) {
           for (int dx = -1; dx <= 1; dx++) {
-            if (dx == 0 && dy == 0) continue;
+            if (dx == 0 && dy == 0)
+              continue;
             int nx = (x + dx + W) % W;
             int ny = (y + dy + H) % H;
             n += grid[ny][nx];
@@ -80,7 +82,8 @@ class LifeMode : public DisplayMode {
         bool alive = grid[y][x];
         bool survives = alive ? (n == 2 || n == 3) : (n == 3);
         next[y][x] = survives ? 1 : 0;
-        if (survives) population++;
+        if (survives)
+          population++;
       }
       yield();
     }
@@ -122,7 +125,8 @@ class LifeMode : public DisplayMode {
     u8g2->clearBuffer();
     for (int y = 0; y < H; y++) {
       for (int x = 0; x < W; x++) {
-        if (grid[y][x]) u8g2->drawPixel(x, y);
+        if (grid[y][x])
+          u8g2->drawPixel(x, y);
       }
       yield();
     }

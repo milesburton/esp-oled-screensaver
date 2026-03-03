@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Arduino.h>
+
 #include <ESP8266HTTPClient.h>
+
 #include <Updater.h>
 
 #include "Config.h"
@@ -12,16 +14,16 @@
 namespace AutoUpdater {
 // Update states
 enum class UpdateState {
-  IDLE,           // Waiting or no update available
-  DOWNLOADING,    // Fetching binary from GitHub
-  VALIDATING,     // Verifying SHA256 (if available)
-  FLASHING,       // Writing to flash partition
-  VERIFYING,      // Post-flash verification
-  SUCCESS,        // Completed successfully
-  ERROR_DOWNLOAD, // Download failed
-  ERROR_UNPACK,   // Binary unpacking failed
-  ERROR_FLASH,    // Flash write failed
-  ERROR_ABORT,    // User aborted
+  IDLE,            // Waiting or no update available
+  DOWNLOADING,     // Fetching binary from GitHub
+  VALIDATING,      // Verifying SHA256 (if available)
+  FLASHING,        // Writing to flash partition
+  VERIFYING,       // Post-flash verification
+  SUCCESS,         // Completed successfully
+  ERROR_DOWNLOAD,  // Download failed
+  ERROR_UNPACK,    // Binary unpacking failed
+  ERROR_FLASH,     // Flash write failed
+  ERROR_ABORT,     // User aborted
 };
 
 static UpdateState currentState = UpdateState::IDLE;
@@ -62,9 +64,13 @@ inline const char* stateToString(UpdateState state) {
   }
 }
 
-inline UpdateState getState() { return currentState; }
+inline UpdateState getState() {
+  return currentState;
+}
 
-inline uint8_t getProgress() { return updateProgress; }
+inline uint8_t getProgress() {
+  return updateProgress;
+}
 
 inline void reset() {
   currentState = UpdateState::IDLE;
@@ -203,8 +209,8 @@ inline void performUpdate() {
         }
         bytesDownloaded += bytesRead;
         updateProgress = (bytesDownloaded * 100) / totalBytesExpected;
-        Logger::printf("AutoUpdater: progress %u%% (%u / %u bytes)", updateProgress, bytesDownloaded,
-                       totalBytesExpected);
+        Logger::printf("AutoUpdater: progress %u%% (%u / %u bytes)", updateProgress,
+                       bytesDownloaded, totalBytesExpected);
         yield();
       }
     } else {

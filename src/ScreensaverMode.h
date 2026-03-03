@@ -19,9 +19,8 @@ class ScreensaverMode : public DisplayMode {
   uint32_t elapsedMs;
 
  public:
-  ScreensaverMode(ClockMode* clock, BoingMode* boing, WeatherMode* weather,
-                  BreakoutMode* breakout, PacManMode* pacman, StarfieldMode* starfield,
-                  LifeMode* life, SonicMode* sonic)
+  ScreensaverMode(ClockMode* clock, BoingMode* boing, WeatherMode* weather, BreakoutMode* breakout,
+                  PacManMode* pacman, StarfieldMode* starfield, LifeMode* life, SonicMode* sonic)
       : modeCount(0), currentIndex(0), elapsedMs(0) {
     modes[modeCount++] = clock;
     modes[modeCount++] = boing;

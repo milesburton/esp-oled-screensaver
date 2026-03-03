@@ -6,21 +6,21 @@
 #include <DNSServer.h>
 #include <ElegantOTA.h>
 
+#include "AutoUpdater.h"
 #include "BreakoutMode.h"
 #include "ClockMode.h"
 #include "Config.h"
 #include "CredentialsManager.h"
 #include "DisplayManager.h"
-#include "Logger.h"
 #include "LifeMode.h"
-#include "UpdateManager.h"
-#include "UpdateChecker.h"
-#include "AutoUpdater.h"
+#include "Logger.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
 #include "SonicMode.h"
 #include "StarfieldMode.h"
+#include "UpdateChecker.h"
+#include "UpdateManager.h"
 
 class NetworkManager {
  private:
@@ -231,7 +231,8 @@ class NetworkManager {
       http.sendContent(F("<li><b>Status:</b> "));
       http.sendContent(autoUpdateEnabled ? "ENABLED" : "DISABLED");
       http.sendContent(F("</li><li><b>Channel:</b> "));
-      http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable" : "Beta");
+      http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable"
+                                                                                          : "Beta");
       http.sendContent(F("</li><li><b>Update Available:</b> "));
       http.sendContent(UpdateChecker::isUpdateAvailable() ? "YES" : "No");
       if (UpdateChecker::isUpdateAvailable()) {
@@ -241,7 +242,8 @@ class NetworkManager {
       }
       http.sendContent(F("</li></ul>"));
       http.sendContent(F("<p>"));
-      http.sendContent(autoUpdateEnabled ? "<a href='/autoupdate?on=0'>Disable Auto-Update</a>" : "<a href='/autoupdate?on=1'>Enable Auto-Update</a>");
+      http.sendContent(autoUpdateEnabled ? "<a href='/autoupdate?on=0'>Disable Auto-Update</a>"
+                                         : "<a href='/autoupdate?on=1'>Enable Auto-Update</a>");
       http.sendContent(F("</p>"));
 
       http.sendContent(
@@ -443,10 +445,14 @@ class NetworkManager {
 
     http.on("/check-update", HTTP_GET, [this]() {
       String json = "{";
-      json += "\"auto_update_enabled\":" + String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
-      json += "\"channel\":\"" + String(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "stable" : "beta") + "\",";
+      json += "\"auto_update_enabled\":" +
+              String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
+      auto channel =
+          (UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE) ? "stable" : "beta";
+      json += "\"channel\":\"" + String(channel) + "\",";
       json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\",";
-      json += "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false");
+      json +=
+          "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false");
       if (UpdateChecker::isUpdateAvailable()) {
         json += ",\"available_version\":\"" + String(UpdateChecker::getAvailableVersion()) + "\"";
       }
@@ -463,9 +469,12 @@ class NetworkManager {
     http.on("/update-status", HTTP_GET, [this]() {
       // Report current auto-update status in JSON format
       String json = "{";
-      json += "\"auto_update_enabled\":" + String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
+      json += "\"auto_update_enabled\":" +
+              String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
       json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\",";
-      json += "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false") + ",";
+      json +=
+          "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false") +
+          ",";
 
       // Map updater state to string
       const char* stateStr = "UNKNOWN";
