@@ -14,6 +14,7 @@
 #include "Logger.h"
 #include "LifeMode.h"
 #include "UpdateManager.h"
+#include "UpdateChecker.h"
 #include "ModeHelper.h"
 #include "PacManMode.h"
 #include "ScreensaverMode.h"
@@ -230,13 +231,20 @@ class NetworkManager {
       http.sendContent(autoUpdateEnabled ? "ENABLED" : "DISABLED");
       http.sendContent(F("</li><li><b>Channel:</b> "));
       http.sendContent(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "Stable" : "Beta");
+      http.sendContent(F("</li><li><b>Update Available:</b> "));
+      http.sendContent(UpdateChecker::isUpdateAvailable() ? "YES" : "No");
+      if (UpdateChecker::isUpdateAvailable()) {
+        http.sendContent(F(" (v"));
+        http.sendContent(UpdateChecker::getAvailableVersion());
+        http.sendContent(F(")"));
+      }
       http.sendContent(F("</li></ul>"));
       http.sendContent(F("<p>"));
       http.sendContent(autoUpdateEnabled ? "<a href='/autoupdate?on=0'>Disable Auto-Update</a>" : "<a href='/autoupdate?on=1'>Enable Auto-Update</a>");
       http.sendContent(F("</p>"));
 
       http.sendContent(
-          F("<p><a href='/update'>OTA Update</a></p>"
+          F("<p><a href='/update'>OTA Update</a> | <a href='/check-update'>Check Now</a></p>"
             "<p><a href='/wifi'>WiFi Setup</a> | <a href='/clear-eeprom'>Clear Saved WiFi</a></p>"
             "<h3>Display Mode</h3>"
             "<p>"
@@ -436,9 +444,19 @@ class NetworkManager {
       String json = "{";
       json += "\"auto_update_enabled\":" + String(UpdateManager::isAutoUpdateEnabled() ? "true" : "false") + ",";
       json += "\"channel\":\"" + String(UpdateManager::getUpdateChannel() == UpdateManager::CHANNEL_STABLE ? "stable" : "beta") + "\",";
-      json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\"";
+      json += "\"fw_version\":\"" + String(Config::FW_VERSION) + "\",";
+      json += "\"update_available\":" + String(UpdateChecker::isUpdateAvailable() ? "true" : "false");
+      if (UpdateChecker::isUpdateAvailable()) {
+        json += ",\"available_version\":\"" + String(UpdateChecker::getAvailableVersion()) + "\"";
+      }
       json += "}";
       http.send(200, "application/json", json);
+    });
+
+    http.on("/force-check", HTTP_GET, [this]() {
+      // Force a manual update check regardless of auto-update setting or interval
+      UpdateChecker::forceCheck();
+      http.send(200, "application/json", "{\"status\":\"check triggered\"}");
     });
 
     http.onNotFound([this]() { http.send(404, "text/plain", "Not found"); });
@@ -513,6 +531,9 @@ class NetworkManager {
   void update() {
     http.handleClient();
     ElegantOTA.loop();
+
+    // Check for available updates periodically (every 6 hours if enabled)
+    UpdateChecker::checkForUpdates();
 
     // Process DNS requests in AP mode for captive portal (wildcard redirect)
     if (apMode) {
